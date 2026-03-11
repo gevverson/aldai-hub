@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-forest-50 text-gray-900 font-sans antialiased selection:bg-amber-400 selection:text-forest-950;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight text-forest-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg focus:ring-4 focus:ring-amber-300 focus:outline-none;
+  }
+  
+  .btn-secondary {
+    @apply bg-forest-800 hover:bg-forest-900 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg focus:ring-4 focus:ring-forest-300 focus:outline-none;
+  }
+  
+  .btn-danger {
+    @apply bg-alert-red hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg focus:ring-4 focus:ring-red-300 focus:outline-none;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-forest-100 overflow-hidden hover:shadow-md transition-shadow duration-300;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide uppercase;
+  }
+}
+
+/* Custom Scrollbar for modern look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f0fdf4; 
+}
+::-webkit-scrollbar-thumb {
+  background: #1B4332; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #15803d; 
+}

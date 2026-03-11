@@ -1,0 +1,16 @@
+{
+  "name": "macho-ya-mwananchi-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.1",
+    "mongoose": "^9.3.0"
+  }
+}
