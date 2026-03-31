@@ -10,6 +10,8 @@ const projectSchema = mongoose.Schema(
     officialStatus: { type: String, required: true },
     communityStatus: { type: String, required: true },
     auditNote: { type: String, required: true },
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
   },
   { timestamps: true }
 );

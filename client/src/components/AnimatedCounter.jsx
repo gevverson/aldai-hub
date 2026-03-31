@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-const AnimatedCounter = ({ targetValue, duration = 2000, prefix = '', suffix = '' }) => {
+const AnimatedCounter = ({ targetValue, duration = 2000, prefix = '', suffix = '', decimals = 0 }) => {
   const [count, setCount] = useState(0);
   const counterRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -33,7 +33,8 @@ const AnimatedCounter = ({ targetValue, duration = 2000, prefix = '', suffix = '
       
       // Easing function for smoother animation
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      setCount(Math.floor(easeOutQuart * targetValue));
+      const raw = easeOutQuart * targetValue;
+      setCount(decimals > 0 ? parseFloat(raw.toFixed(decimals)) : Math.floor(raw));
 
       if (progress < 1) {
         window.requestAnimationFrame(step);
@@ -43,10 +44,12 @@ const AnimatedCounter = ({ targetValue, duration = 2000, prefix = '', suffix = '
     };
 
     window.requestAnimationFrame(step);
-  }, [targetValue, duration, isVisible]);
+  }, [targetValue, duration, isVisible, decimals]);
 
-  // Format number with commas
-  const formattedCount = new Intl.NumberFormat('en-US').format(count);
+  // Format number — use toFixed for decimals, commas for integers
+  const formattedCount = decimals > 0
+    ? count.toFixed(decimals)
+    : new Intl.NumberFormat('en-US').format(count);
 
   return (
     <span ref={counterRef}>

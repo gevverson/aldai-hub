@@ -8,7 +8,9 @@ export const projects = [
     year: 2019, 
     officialStatus: "Complete", 
     communityStatus: "GHOST PROJECT",
-    auditNote: "School does not exist. Physical verification found nothing." 
+    auditNote: "School does not exist. Physical verification found nothing — empty field where school should be.",
+    lat: 0.2153,
+    lng: 35.2041
   },
   { 
     id: 2,
@@ -19,7 +21,9 @@ export const projects = [
     year: 2019,
     officialStatus: "Complete", 
     communityStatus: "DISPUTED",
-    auditNote: "Cracked floors, leaking roof, no completion certificate." 
+    auditNote: "Cracked floors, leaking roof, no completion certificate. Paid as complete.",
+    lat: 0.1512,
+    lng: 35.1733
   },
   { 
     id: 3,
@@ -30,7 +34,9 @@ export const projects = [
     year: 2019,
     officialStatus: "Ongoing", 
     communityStatus: "STALLED",
-    auditNote: "Incomplete years past deadline. Value for money unconfirmed." 
+    auditNote: "Incomplete 4+ years past deadline. Value for money unconfirmed. No contractor on site.",
+    lat: 0.2002,
+    lng: 35.0987
   },
   { 
     id: 4,
@@ -41,7 +47,9 @@ export const projects = [
     year: 2016,
     officialStatus: "Under Construction", 
     communityStatus: "STALLED",
-    auditNote: "Non-operational after 8 years. Cost exceeds market rate for similar facility." 
+    auditNote: "Non-operational after 8 years. Cost exceeds market rate by 340%. Procurement irregularities flagged.",
+    lat: 0.4023,
+    lng: 35.4189
   },
   { 
     id: 5,
@@ -52,7 +60,9 @@ export const projects = [
     year: 2020,
     officialStatus: "Ongoing", 
     communityStatus: "STALLED",
-    auditNote: "Signed contract documents withheld from auditors. Payment vouchers missing." 
+    auditNote: "Signed contract documents withheld from auditors. Payment vouchers missing. Audit obstruction.",
+    lat: 0.1633,
+    lng: 35.1821
   },
   { 
     id: 6,
@@ -63,7 +73,9 @@ export const projects = [
     year: 2019,
     officialStatus: "Complete", 
     communityStatus: "ABANDONED",
-    auditNote: "Completely abandoned site. Ramp is structurally defective and requires demolition." 
+    auditNote: "Completely abandoned site. Defective ramp requires demolition. No completion certificate.",
+    lat: -0.0812,
+    lng: 35.2711
   },
   { 
     id: 7,
@@ -74,7 +86,9 @@ export const projects = [
     year: 2019,
     officialStatus: "Complete", 
     communityStatus: "DISPUTED",
-    auditNote: "1.2 acres purchased. No title deed transferred to school. Land ownership unclear." 
+    auditNote: "1.2 acres purchased. No title deed transferred to school. Land ownership remains unclear.",
+    lat: 0.2304,
+    lng: 35.1944
   },
   { 
     id: 8,
@@ -85,7 +99,9 @@ export const projects = [
     year: 2019,
     officialStatus: "Complete", 
     communityStatus: "DISPUTED",
-    auditNote: "Land purchased without title deed or survey beacons. Potential kickback conduit." 
+    auditNote: "Land purchased without title deed or survey beacons. Price inflated — market value Ksh 650,000.",
+    lat: 0.5201,
+    lng: 35.5534
   },
   { 
     id: 9,
@@ -96,7 +112,9 @@ export const projects = [
     year: 2019,
     officialStatus: "Complete", 
     communityStatus: "DISPUTED",
-    auditNote: "Floor slants backward retaining stagnant water. Broken windows. Structural cracks." 
+    auditNote: "Floor retains stagnant water. Broken windows. Structural cracks. Paid as complete.",
+    lat: 0.1441,
+    lng: 35.1678
   },
   { 
     id: 10,
@@ -107,17 +125,19 @@ export const projects = [
     year: 2019,
     officialStatus: "Complete", 
     communityStatus: "MISALLOCATED",
-    auditNote: "Built Form 1-4 classrooms for a school that only had Form 1 students." 
+    auditNote: "Built Form 1-4 classrooms for a school that only had Form 1 students. Suspected fund inflation.",
+    lat: 0.0534,
+    lng: 35.0781
   }
 ];
 
 export const wards = [
-  { name: "Kabwareng", budgetAllocated: 12000000, percentSpent: 85, stalledCount: 2, healthScore: "amber" },
-  { name: "Terik", budgetAllocated: 15500000, percentSpent: 65, stalledCount: 4, healthScore: "red" },
-  { name: "Kemeloi-Maraba", budgetAllocated: 18000000, percentSpent: 92, stalledCount: 3, healthScore: "red" },
-  { name: "Kobujoi", budgetAllocated: 14200000, percentSpent: 78, stalledCount: 5, healthScore: "red" },
-  { name: "Kaptumo-Kaboi", budgetAllocated: 11000000, percentSpent: 88, stalledCount: 1, healthScore: "amber" },
-  { name: "Koyo-Ndurio", budgetAllocated: 13500000, percentSpent: 45, stalledCount: 1, healthScore: "green" }
+  { name: "Kabwareng", budgetAllocated: 12000000, percentSpent: 85, stalledCount: 2, healthScore: "amber", lat: 0.055, lng: 35.08 },
+  { name: "Terik", budgetAllocated: 15500000, percentSpent: 65, stalledCount: 4, healthScore: "red", lat: -0.08, lng: 35.27 },
+  { name: "Kemeloi-Maraba", budgetAllocated: 18000000, percentSpent: 92, stalledCount: 3, healthScore: "red", lat: 0.22, lng: 35.20 },
+  { name: "Kobujoi", budgetAllocated: 14200000, percentSpent: 78, stalledCount: 5, healthScore: "red", lat: 0.155, lng: 35.175 },
+  { name: "Kaptumo-Kaboi", budgetAllocated: 11000000, percentSpent: 88, stalledCount: 1, healthScore: "amber", lat: 0.52, lng: 35.55 },
+  { name: "Koyo-Ndurio", budgetAllocated: 13500000, percentSpent: 45, stalledCount: 1, healthScore: "green", lat: 0.30, lng: 35.30 }
 ];
 
 export const globalStats = {

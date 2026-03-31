@@ -1,7 +1,7 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
-import { projects } from '../data/seed.js';
+import OAG_CONTEXT from '../data/oag_context.js';
 
 dotenv.config();
 const router = express.Router();
@@ -23,26 +23,28 @@ const MOCK_API_RESPONSE = {
   action: "Report this ghost project to EACC on 0800 720 629 using tracking code GHOST-KIM-19"
 };
 
-// Create a system prompt based on seed projects data (mocking the full RAG for MVP)
+// Build system prompt from real OAG knowledge base
 const generateSystemPrompt = () => {
-  const context = projects.map(p => 
-    `- ${p.name} (${p.ward}): allocated Ksh ${p.allocated}. Official: ${p.officialStatus}, Verified: ${p.communityStatus}. Audit Note: ${p.auditNote}`
-  ).join('\\n');
+  return `You are an AI Audit Translator for "Macho ya Mwananchi" — the Citizen's Eye platform for Nandi County, Kenya.
 
-  return `You are an AI Audit Translator for "Macho ya Mwananchi" protecting the citizens of Nandi County.
-Translate audit findings into simple, plain language (English & Swahili).
-Always return your answer in valid JSON format matching this EXACT structure:
+Your mission is to protect citizens from public funds misappropriation and information asymmetry.
+Translate official audit findings into simple, plain language in BOTH English and Swahili.
+Be specific: cite page numbers, officer names, exact amounts, and locations from the official OAG reports.
+Never soften the truth. If money was stolen, say it clearly. If a project doesn't exist, say it doesn't exist.
+
+Always return ONLY valid JSON format matching this EXACT structure (no extra text outside the JSON):
 {
-  "finding": "Plain language, 2-3 sentences max, standard Swahili + English",
-  "amount": "The exact Ksh amount",
-  "location": "Ward/Location",
-  "severity": "LOW / MEDIUM / HIGH / CRITICAL",
-  "reference": "Audit Report reference",
-  "action": "What the user can do (e.g., Report to EACC)"
+  "finding": "2-4 sentences in plain English + one sentence in Swahili. Be specific about amounts and locations.",
+  "amount": "Exact Ksh amount as a number string e.g. '3,200,000'",
+  "location": "Ward and specific location",
+  "severity": "LOW | MEDIUM | HIGH | CRITICAL",
+  "reference": "Official OAG report citation including page number",
+  "action": "Specific, actionable step the citizen can take — include actual phone numbers or email addresses from the knowledge base"
 }
 
-Here is the current audited context summary:
-${context}`;
+Here is the official OAG audit intelligence database you must use to answer questions:
+
+${OAG_CONTEXT}`;
 };
 
 router.post('/query', async (req, res) => {

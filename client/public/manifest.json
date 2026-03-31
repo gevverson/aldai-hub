@@ -1,21 +1,46 @@
 {
   "name": "Macho ya Mwananchi",
-  "short_name": "Mwananchi",
-  "description": "Citizen's Eye — Civic Accountability Platform for Nandi County",
+  "short_name": "Macho",
+  "description": "Citizen's Eye — Aldai Constituency Accountability Platform. Exposing ghost projects and corruption using official audit data.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1B4332",
-  "theme_color": "#1B4332",
+  "background_color": "#14532d",
+  "theme_color": "#14532d",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["government", "social", "news"],
+  "lang": "en-KE",
+  "shortcuts": [
+    {
+      "name": "Evidence Map",
+      "short_name": "Map",
+      "description": "View citizen-verified evidence on the map",
+      "url": "/map"
+    },
+    {
+      "name": "Ask AI Auditor",
+      "short_name": "AI Audit",
+      "description": "Ask the AI about audit findings",
+      "url": "/audit"
+    },
+    {
+      "name": "File a Report",
+      "short_name": "Report",
+      "description": "Submit an anonymous report",
+      "url": "/report"
     }
   ]
 }
