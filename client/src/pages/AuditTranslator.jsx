@@ -1,198 +1,893 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-const AuditTranslator = () => {
-  const [query, setQuery] = useState('');
-  const [conversation, setConversation] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef(null);
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════════════ */
+const MAX_CHARS   = 500;
+const HISTORY_KEY = 'mym_audit_history'; // localStorage only — never sent to server
 
-  const suggestedQuestions = [
-    "Pesa ngapi ilitumika kwa shule ya Kimaren?",
-    "Which projects were abandoned incomplete?",
-    "Hospitali ya Kobujoi ina tatizo gani?"
+const SUGGESTED_QUESTIONS = [
+  { sw: 'Pesa ngapi ilitumika kwa hospitali ya Kobujoi?',   en: 'How much was spent on Kobujoi Hospital?',        ward: 'Kobujoi' },
+  { sw: 'Shule ya Kimaren Girls iko wapi?',                  en: 'Where is Kimaren Girls Secondary School?',        ward: 'Kemeloi-Maraba' },
+  { sw: 'Nini kilitokea na pesa za payroll ya kaunti?',      en: 'What happened to the county payroll money?',      ward: null },
+  { sw: 'Miradi ipi iliachwa bila kukamilika Aldai?',        en: 'Which projects were abandoned incomplete in Aldai?', ward: null },
+  { sw: 'Wafanyakazi wa kisimu wangapi waligunduliwa?',      en: 'How many ghost workers were discovered?',         ward: null },
+  { sw: 'Bursari za wanafunzi zilienda wapi?',               en: 'Where did the student bursaries go?',             ward: null },
+];
+
+const SEVERITY_META = {
+  'MUHIMU SANA': { color: '#DC2626', bg: 'rgba(220,38,38,0.15)', label: '🔴 MUHIMU SANA (Critical)' },
+  'CRITICAL':    { color: '#DC2626', bg: 'rgba(220,38,38,0.15)', label: '🔴 CRITICAL' },
+  'JUU':         { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', label: '🟠 JUU (High)' },
+  'HIGH':        { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', label: '🟠 HIGH' },
+  'KATI':        { color: '#D97706', bg: 'rgba(217,119,6,0.15)',  label: '🟡 KATI (Medium)' },
+  'MEDIUM':      { color: '#D97706', bg: 'rgba(217,119,6,0.15)',  label: '🟡 MEDIUM' },
+  'CHINI':       { color: '#6B7280', bg: 'rgba(107,114,128,0.15)', label: '⚪ CHINI (Low)' },
+  'LOW':         { color: '#6B7280', bg: 'rgba(107,114,128,0.15)', label: '⚪ LOW' },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   PARSE STRUCTURED ANSWER
+   Parses Claude's emoji-section formatted text into blocks
+═══════════════════════════════════════════════════════════ */
+function parseAnswer(text) {
+  if (!text) return null;
+
+  const sectionPatterns = [
+    { key: 'jibu',     regex: /📋[^\n]*\n([\s\S]*?)(?=💰|📍|🚨|📄|👉|$)/,    label: '📋 JIBU',     labelEn: 'Answer' },
+    { key: 'pesa',     regex: /💰[^\n]*\n([\s\S]*?)(?=📍|🚨|📄|👉|$)/,        label: '💰 PESA',     labelEn: 'Money Involved' },
+    { key: 'mahali',   regex: /📍[^\n]*\n([\s\S]*?)(?=🚨|📄|👉|$)/,           label: '📍 MAHALI',   labelEn: 'Where' },
+    { key: 'uzito',    regex: /🚨[^\n]*\n([\s\S]*?)(?=📄|👉|$)/,              label: '🚨 UZITO',    labelEn: 'Severity' },
+    { key: 'chanzo',   regex: /📄[^\n]*\n([\s\S]*?)(?=👉|$)/,                 label: '📄 CHANZO',   labelEn: 'Source' },
+    { key: 'action',   regex: /👉[^\n]*\n([\s\S]*?)$/,                         label: '👉 ACTION',   labelEn: 'What You Can Do' },
   ];
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+  const sections = {};
+  for (const { key, regex } of sectionPatterns) {
+    const match = text.match(regex);
+    if (match) sections[key] = match[1].trim();
+  }
+
+  // Detect severity keyword in uzito block
+  let severityKey = null;
+  if (sections.uzito) {
+    for (const key of Object.keys(SEVERITY_META)) {
+      if (sections.uzito.toUpperCase().includes(key)) {
+        severityKey = key;
+        break;
+      }
     }
-  }, [conversation]);
+  }
 
-  const handleQuery = async (e, text = query) => {
-    if (e) e.preventDefault();
-    if (!text.trim()) return;
+  return { sections, severityKey, raw: text };
+}
 
-    // Add user question
-    const newConv = [...conversation, { type: 'user', text }];
-    setConversation(newConv);
-    setQuery('');
-    setIsLoading(true);
+/* ═══════════════════════════════════════════════════════════
+   TYPEWRITER HOOK
+═══════════════════════════════════════════════════════════ */
+function useTypewriter(text, speed = 8, enabled = true) {
+  const [displayed, setDisplayed] = useState('');
+  const [done, setDone]           = useState(false);
+
+  useEffect(() => {
+    if (!enabled || !text) {
+      setDisplayed(text || '');
+      setDone(true);
+      return;
+    }
+    setDisplayed('');
+    setDone(false);
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        setDisplayed(text.slice(0, i + 1));
+        i++;
+      } else {
+        setDone(true);
+        clearInterval(interval);
+      }
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed, enabled]);
+
+  return { displayed, done };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AI RESPONSE CARD
+═══════════════════════════════════════════════════════════ */
+const SectionBlock = ({ icon, swLabel, enLabel, content, accent }) => (
+  <div
+    className="rounded-xl p-4"
+    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1F2937' }}
+  >
+    <p
+      className="font-bold uppercase tracking-widest mb-2"
+      style={{ color: accent || '#D97706', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {icon} {swLabel} <span style={{ color: '#4B5563', fontWeight: 400 }}>/ {enLabel}</span>
+    </p>
+    <p
+      className="leading-relaxed whitespace-pre-wrap"
+      style={{ color: '#E5E7EB', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
+    >
+      {content}
+    </p>
+  </div>
+);
+
+const ResponseCard = ({ message, onPreFillReport }) => {
+  const parsed = parseAnswer(message.answer);
+  const sev    = parsed?.severityKey ? SEVERITY_META[parsed.severityKey] : null;
+  const [copied, setCopied] = useState(false);
+
+  const copyAnswer = () => {
+    navigator.clipboard.writeText(message.answer || '').then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  if (!parsed || Object.keys(parsed.sections).length === 0) {
+    // Raw text fallback (un-parseable response)
+    return (
+      <div
+        className="rounded-2xl p-6"
+        style={{ background: '#111827', border: '1px solid #1F2937' }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xl">🤖</span>
+          <span className="font-display text-white" style={{ fontSize: '16px' }}>
+            Ukweli Uliobainika
+          </span>
+          {message.service === 'python-rag' && (
+            <span
+              className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(22,163,74,0.15)', color: '#4ADE80', border: '1px solid rgba(22,163,74,0.3)' }}
+            >
+              RAG
+            </span>
+          )}
+        </div>
+        <p className="leading-relaxed text-gray-300 whitespace-pre-wrap" style={{ fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
+          {message.answer}
+        </p>
+      </div>
+    );
+  }
+
+  const { sections } = parsed;
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: '#111827', border: '1px solid #1F2937' }}
+    >
+      {/* Header bar */}
+      <div
+        className="px-5 py-3 flex items-center justify-between gap-3"
+        style={{ background: '#0D1117', borderBottom: '1px solid #1F2937' }}
+      >
+        <div className="flex items-center gap-2">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+            style={{ background: 'rgba(217,119,6,0.15)' }}
+          >
+            🤖
+          </div>
+          <span
+            className="font-display text-white"
+            style={{ fontSize: '15px' }}
+          >
+            Ukweli Uliobainika
+          </span>
+          <span
+            className="text-xs font-semibold"
+            style={{ color: '#4B5563', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Truth Verified
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {message.service === 'python-rag' && (
+            <span
+              className="text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(22,163,74,0.12)', color: '#4ADE80', border: '1px solid rgba(22,163,74,0.25)', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              📡 RAG
+            </span>
+          )}
+          {message.response_time_ms && (
+            <span
+              className="text-xs font-mono-jet"
+              style={{ color: '#4B5563' }}
+            >
+              {message.response_time_ms}ms
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Severity banner */}
+      {sev && (
+        <div
+          className="px-5 py-2 flex items-center gap-2"
+          style={{ background: sev.bg, borderBottom: `1px solid ${sev.color}25` }}
+        >
+          <span
+            className="font-bold uppercase tracking-widest"
+            style={{ color: sev.color, fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {sev.label}
+          </span>
+        </div>
+      )}
+
+      {/* Content sections */}
+      <div className="p-5 flex flex-col gap-3">
+        {sections.jibu && (
+          <SectionBlock icon="📋" swLabel="JIBU" enLabel="Answer" content={sections.jibu} accent="#D97706" />
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {sections.pesa && (
+            <SectionBlock icon="💰" swLabel="PESA" enLabel="Money Involved" content={sections.pesa} accent="#FCA5A5" />
+          )}
+          {sections.mahali && (
+            <SectionBlock icon="📍" swLabel="MAHALI" enLabel="Where" content={sections.mahali} accent="#60A5FA" />
+          )}
+        </div>
+
+        {sections.uzito && (
+          <SectionBlock icon="🚨" swLabel="UZITO" enLabel="Severity" content={sections.uzito} accent={sev?.color || '#F59E0B'} />
+        )}
+
+        {sections.chanzo && (
+          <div
+            className="rounded-xl p-4"
+            style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)' }}
+          >
+            <p
+              className="font-bold uppercase tracking-widest mb-1"
+              style={{ color: '#D97706', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              📄 CHANZO / Source
+            </p>
+            <p
+              className="leading-relaxed"
+              style={{ color: '#FCD34D', fontSize: '13px', fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {sections.chanzo}
+            </p>
+          </div>
+        )}
+
+        {sections.action && (
+          <div
+            className="rounded-xl p-4"
+            style={{ background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.2)' }}
+          >
+            <p
+              className="font-bold uppercase tracking-widest mb-2"
+              style={{ color: '#4ADE80', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              👉 UNACHOWEZA KUFANYA / What You Can Do
+            </p>
+            <p
+              className="leading-relaxed whitespace-pre-wrap"
+              style={{ color: '#D1FAE5', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {sections.action}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Source citations from RAG */}
+      {message.sources?.length > 0 && (
+        <div
+          className="px-5 pb-4 flex flex-wrap gap-2"
+          style={{ borderTop: '1px solid #1F2937', paddingTop: '12px' }}
+        >
+          <span style={{ color: '#4B5563', fontSize: '10px', fontFamily: "'DM Sans', sans-serif", lineHeight: '24px' }}>
+            Sources:
+          </span>
+          {message.sources.slice(0, 3).map((s, i) => (
+            <span
+              key={i}
+              className="text-xs px-2 py-0.5 rounded-full"
+              style={{
+                background: 'rgba(217,119,6,0.1)',
+                color: '#FCD34D',
+                border: '1px solid rgba(217,119,6,0.2)',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '10px',
+              }}
+            >
+              {s.document} p.{s.page}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div
+        className="px-5 py-3 flex flex-wrap gap-2"
+        style={{ background: '#0D1117', borderTop: '1px solid #1F2937' }}
+      >
+        <a
+          href="tel:0800720629"
+          className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
+          style={{
+            background: 'rgba(220,38,38,0.12)',
+            color: '#FCA5A5',
+            border: '1px solid rgba(220,38,38,0.25)',
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          📞 EACC: 0800 720 629
+        </a>
+        <button
+          onClick={copyAnswer}
+          className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
+          style={{
+            background: copied ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.05)',
+            color: copied ? '#4ADE80' : '#9CA3AF',
+            border: `1px solid ${copied ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          {copied ? '✅ Nakili!' : '📋 Nakili Jibu'}
+        </button>
+        <Link
+          to="/report"
+          className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
+          style={{
+            background: 'rgba(217,119,6,0.1)',
+            color: '#FCD34D',
+            border: '1px solid rgba(217,119,6,0.25)',
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          🚨 Ripoti Tatizo Hili
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING STATE
+═══════════════════════════════════════════════════════════ */
+const LoadingDots = () => {
+  const [dots, setDots] = useState(0);
+  const phrases = [
+    'AI inasoma hati za OAG…',
+    'Inatafuta ukweli…',
+    'Inachambua ripoti…',
+    'Inakusanya ushahidi…',
+  ];
+  const [phraseIdx, setPhraseIdx] = useState(0);
+
+  useEffect(() => {
+    const d = setInterval(() => setDots((p) => (p + 1) % 4), 400);
+    const p = setInterval(() => setPhraseIdx((i) => (i + 1) % phrases.length), 2000);
+    return () => { clearInterval(d); clearInterval(p); };
+  }, []);
+
+  return (
+    <div
+      className="rounded-2xl p-5 flex items-center gap-4"
+      style={{ background: '#111827', border: '1px solid #1F2937' }}
+    >
+      <div className="flex gap-1.5 flex-shrink-0">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-2.5 h-2.5 rounded-full"
+            style={{
+              background: '#D97706',
+              animation: `bounce 1.2s ease-in-out ${i * 0.15}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+      <p
+        className="italic"
+        style={{ color: '#6B7280', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
+      >
+        {phrases[phraseIdx]}{''.padEnd(dots, '.')}
+      </p>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════
+   DOCUMENT INVENTORY
+═══════════════════════════════════════════════════════════ */
+const DocumentInventory = () => {
+  const [docs, setDocs]   = useState([]);
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/audit/documents')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setDocs(d.documents || []); })
+      .catch(() => {});
+
+    fetch('/api/audit/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setStatus(d); })
+      .catch(() => {});
+  }, []);
+
+  const isOnline = status?.python_service === 'online';
+
+  return (
+    <div
+      className="rounded-xl p-4 flex flex-col gap-2"
+      style={{ background: '#0D1117', border: '1px solid #1F2937' }}
+    >
+      <div className="flex items-center justify-between">
+        <p
+          className="font-bold uppercase tracking-widest"
+          style={{ color: '#4B5563', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Hati zilizo katika mfumo / Documents Indexed
+        </p>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: isOnline ? '#4ADE80' : '#F59E0B' }}
+          />
+          <span
+            style={{ color: isOnline ? '#4ADE80' : '#F59E0B', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            {isOnline ? 'RAG Online' : 'Direct Claude'}
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {docs.length === 0 ? (
+          <span style={{ color: '#6B7280', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
+            Loading…
+          </span>
+        ) : docs.map((d, i) => (
+          <span
+            key={i}
+            className="text-xs px-2 py-0.5 rounded-full"
+            style={{
+              background: 'rgba(217,119,6,0.08)',
+              color: '#9CA3AF',
+              border: '1px solid #1F2937',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {d.document_name === 'OAG_BUILTIN_NANDI_KNOWLEDGE'
+              ? '📚 OAG Nandi/Aldai Built-in (2018–2024)'
+              : `📄 ${d.document_name} (${d.year})`}
+          </span>
+        ))}
+      </div>
+      <p
+        style={{ color: '#374151', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+      >
+        Powered by official Kenya Office of the Auditor-General (OAG) reports.
+      </p>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN PAGE
+═══════════════════════════════════════════════════════════ */
+const AuditTranslator = () => {
+  const location = useLocation();
+
+  // State
+  const [question, setQuestion]     = useState('');
+  const [language, setLanguage]     = useState('sw'); // default Swahili
+  const [messages, setMessages]     = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [history, setHistory]       = useState(() => {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+  });
+  const [showHistory, setShowHistory] = useState(false);
+
+  const bottomRef    = useRef(null);
+  const textareaRef  = useRef(null);
+
+  // Pre-fill from navigation state (e.g. from /report page)
+  useEffect(() => {
+    if (location.state?.prefill) {
+      setQuestion(location.state.prefill);
+      textareaRef.current?.focus();
+    }
+  }, [location.state]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  // Persist history to localStorage
+  useEffect(() => {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 5))); } catch {}
+  }, [history]);
+
+  const submitQuestion = useCallback(async (q) => {
+    const text = (q || question).trim();
+    if (!text || loading) return;
+
+    // Add user message
+    const userMsg = { type: 'user', text, lang: language };
+    setMessages((prev) => [...prev, userMsg]);
+    setQuestion('');
+    setLoading(true);
+
+    // Add to session history (localStorage only, never sent to server)
+    setHistory((prev) => [{ text, lang: language, ts: Date.now() }, ...prev].slice(0, 5));
 
     try {
-      const response = await fetch('/api/audit/query', {
-        method: 'POST',
+      const res = await fetch('/api/audit/query', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: text })
+        body:    JSON.stringify({ question: text, language }),
       });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setConversation([...newConv, { type: 'ai', data: data.answer }]);
-      } else {
-        throw new Error(data.error || "Failed to analyze document");
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || data.errorEn || 'API error');
       }
-    } catch (error) {
-      setConversation([...newConv, { 
-        type: 'error', 
-        text: "Samahani (Sorry). Could not connect to the Audit Database right now. Please try again later." 
-      }]);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          type:             'ai',
+          answer:           data.answer,
+          sources:          data.sources || [],
+          response_time_ms: data.response_time_ms,
+          model:            data.model,
+          service:          data.service,
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type:  'error',
+          text:  err.message?.includes('Rate limit')
+            ? 'Umefika kikomo cha maswali (20 kwa saa). Jaribu baadaye.\n(Rate limit reached. Try again in 1 hour.)'
+            : 'Samahani — huduma ya AI haipo sasa hivi. Tafadhali jaribu tena.\n(Sorry — AI service temporarily unavailable. Please try again.)',
+        },
+      ]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  }, [question, language, loading]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      submitQuestion();
     }
   };
 
+  const charCount = question.length;
+  const charRatio = charCount / MAX_CHARS;
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-20">
-      
-      <div className="mb-8 border-l-4 border-amber-500 pl-4">
-        <h1 className="text-3xl font-display font-bold text-forest-900 mb-2">AI Audit Translator</h1>
-        <p className="text-gray-700">
-          The Auditor-General's reports are 400 pages of dense financial jargon. 
-          Ask any question in plain English or Swahili, and our AI will translate the official 
-          findings into simple truth.
-        </p>
-      </div>
+    <div
+      className="min-h-screen py-10 px-4 sm:px-6 lg:px-8"
+      style={{ background: '#0A0A0A' }}
+    >
+      {/* Subtle scanline texture */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px)',
+          zIndex: 0,
+        }}
+      />
 
-      <div className="bg-white rounded-xl shadow-sm border border-forest-100 overflow-hidden min-h-[500px] flex flex-col">
-        
-        {/* Chat Area */}
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-50/50 space-y-6">
-          
-          {/* Welcome Message */}
-          {conversation.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full space-y-8 opacity-90 mt-10">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 text-amber-500">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-              </svg>
-              <div className="text-center max-w-lg">
-                <p className="font-semibold text-forest-900 text-lg mb-4">Try asking about a project:</p>
-                <div className="flex flex-col gap-3">
-                  {suggestedQuestions.map((q, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => handleQuery(null, q)}
-                      className="bg-white border border-forest-200 text-forest-800 hover:border-amber-500 hover:text-amber-600 px-4 py-3 rounded-lg text-sm text-left transition-colors shadow-sm"
-                    >
-                      "{q}"
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+      <div className="relative z-10 max-w-3xl mx-auto">
 
-          {/* Conversation Thread */}
-          {conversation.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              
-              {msg.type === 'user' ? (
-                <div className="bg-forest-900 text-white px-5 py-3 rounded-2xl rounded-tr-sm max-w-[85%] shadow-sm">
-                  <p>{msg.text}</p>
-                </div>
-              ) : msg.type === 'error' ? (
-                <div className="bg-red-50 text-alert-red px-5 py-3 rounded-2xl border border-red-200 rounded-tl-sm max-w-[85%]">
-                  <p>{msg.text}</p>
-                </div>
-              ) : (
-                /* AI Response Block structured specifically as requested by Prompt Module 3 */
-                <div className="bg-white border-2 border-forest-100 px-5 py-5 rounded-xl rounded-tl-sm max-w-[95%] lg:max-w-[85%] shadow-sm w-full">
-                  <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-amber-500">
-                      <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 8.25 3c1.804 0 3.328.67 4.25 1.737C13.422 3.67 14.946 3 16.75 3c3.536 0 6 2.322 6 5.25 0 3.924-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-                    </svg>
-                    <span className="font-bold text-forest-900 tracking-wide uppercase text-sm">Truth Verified</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-xs text-gray-500 font-bold tracking-widest uppercase mb-1 flex items-center gap-2">
-                        📋 What the Auditor Found
-                      </p>
-                      <p className="text-gray-800 font-medium leading-relaxed bg-forest-50 p-3 rounded-md border-l-2 border-forest-800">
-                        {msg.data.finding}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-50 p-2 rounded border border-gray-100">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5">💰 Money Involved</p>
-                        <p className="font-bold text-red-700">Ksh {msg.data.amount}</p>
-                      </div>
-                      <div className="bg-gray-50 p-2 rounded border border-gray-100">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5">🚨 How Serious</p>
-                        <p className="font-bold text-alert-red">{msg.data.severity}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase mb-1">📍 Where</p>
-                      <p className="text-sm font-semibold text-forest-800">{msg.data.location}</p>
-                    </div>
-
-                    <div className="pt-3 border-t border-gray-100 mt-2">
-                      <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase mb-1">📄 Audit Reference</p>
-                      <p className="text-xs text-forest-700 underline decoration-forest-200 underline-offset-2">{msg.data.reference}</p>
-                    </div>
-
-                    <div className="bg-amber-50 p-3 rounded border border-amber-200 mt-4">
-                      <p className="text-[10px] text-amber-800 font-bold tracking-widest uppercase mb-1">👉 What you can do</p>
-                      <p className="text-sm text-gray-800 font-medium">{msg.data.action}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white border text-forest-800 px-5 py-4 rounded-2xl rounded-tl-sm max-w-[85%] shadow-sm flex items-center space-x-2">
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce"></div>
-                <span className="text-sm text-gray-500 italic ml-2">Searching 400-page OAG report...</span>
-              </div>
-            </div>
-          )}
-          
-          <div ref={scrollRef}></div>
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 bg-white border-t border-forest-100">
-          <form onSubmit={handleQuery} className="flex gap-2">
-            <input 
-              type="text" 
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask about a missing project..."
-              className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-sm"
-              disabled={isLoading}
-            />
-            <button 
-              type="submit" 
-              disabled={isLoading || !query.trim()}
-              className="bg-forest-900 hover:bg-forest-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
+        {/* ── Page Header ── */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+              style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.25)' }}
             >
-              Ask AI
-            </button>
-          </form>
-          <p className="text-center text-xs text-gray-400 mt-3">
-            Powered by RAG analysis of official Kenya Office of the Auditor-General (OAG) reports.
+              🤖
+            </div>
+            <div>
+              <h1
+                className="font-display text-white leading-none"
+                style={{ fontSize: 'clamp(20px, 4vw, 28px)' }}
+              >
+                MFUMO WA UKAGUZI WA AI
+              </h1>
+              <p
+                style={{ color: '#6B7280', fontSize: '11px', fontFamily: "'DM Sans', sans-serif", marginTop: '2px' }}
+              >
+                AI Audit Translator
+              </p>
+            </div>
+          </div>
+          <p
+            className="mb-1"
+            style={{ color: '#9CA3AF', fontSize: '15px', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Uliza swali lolote kuhusu pesa za umma za Nandi County.
+          </p>
+          <p
+            style={{ color: '#4B5563', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Ask any question about Nandi County public funds — in Swahili or English.
+            AI will answer from official Auditor-General documents.
           </p>
         </div>
+
+        {/* ── Suggested Questions ── */}
+        {messages.length === 0 && (
+          <div className="mb-8">
+            <p
+              className="font-bold uppercase tracking-widest mb-3"
+              style={{ color: '#4B5563', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Maswali ya kawaida / Common questions — click to ask
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {SUGGESTED_QUESTIONS.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setQuestion(language === 'sw' ? q.sw : q.en);
+                    textareaRef.current?.focus();
+                  }}
+                  disabled={loading}
+                  className="text-left p-3 rounded-xl transition-all duration-200 group"
+                  style={{
+                    background: '#111827',
+                    border: '1px solid #1F2937',
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(217,119,6,0.4)';
+                    e.currentTarget.style.background  = '#1a2436';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#1F2937';
+                    e.currentTarget.style.background  = '#111827';
+                  }}
+                >
+                  <p style={{ color: '#D1D5DB', fontSize: '13px' }}>
+                    "{language === 'sw' ? q.sw : q.en}"
+                  </p>
+                  {q.ward && (
+                    <p
+                      className="mt-1 text-xs"
+                      style={{ color: '#D97706', fontFamily: "'JetBrains Mono', monospace" }}
+                    >
+                      📍 {q.ward} Ward
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Conversation Thread ── */}
+        {messages.length > 0 && (
+          <div className="flex flex-col gap-4 mb-6">
+            {messages.map((msg, idx) => (
+              <div key={idx}>
+                {msg.type === 'user' && (
+                  <div className="flex justify-end">
+                    <div
+                      className="rounded-2xl rounded-tr-sm px-5 py-3 max-w-[85%]"
+                      style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.25)' }}
+                    >
+                      <p style={{ color: '#FCD34D', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
+                        {msg.text}
+                      </p>
+                      <p
+                        className="mt-1"
+                        style={{ color: '#92400E', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+                      >
+                        {msg.lang === 'sw' ? '🇰🇪 Swahili' : '🇬🇧 English'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {msg.type === 'ai' && (
+                  <ResponseCard message={msg} />
+                )}
+
+                {msg.type === 'error' && (
+                  <div
+                    className="rounded-2xl p-4"
+                    style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)' }}
+                  >
+                    <p style={{ color: '#FCA5A5', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'pre-wrap' }}>
+                      ⚠️ {msg.text}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {loading && <LoadingDots />}
+            <div ref={bottomRef} />
+          </div>
+        )}
+
+        {loading && messages.length === 0 && (
+          <div className="mb-6">
+            <LoadingDots />
+            <div ref={bottomRef} />
+          </div>
+        )}
+
+        {/* ── Input Area ── */}
+        <div
+          className="rounded-2xl overflow-hidden sticky bottom-6"
+          style={{ background: '#111827', border: '1px solid #1F2937' }}
+        >
+          {/* Language toggle */}
+          <div
+            className="flex items-center justify-between px-4 py-2"
+            style={{ borderBottom: '1px solid #1F2937', background: '#0D1117' }}
+          >
+            <div className="flex items-center gap-1">
+              {[
+                { code: 'sw', flag: '🇰🇪', label: 'Kiswahili' },
+                { code: 'en', flag: '🇬🇧', label: 'English' },
+              ].map(({ code, flag, label }) => (
+                <button
+                  key={code}
+                  onClick={() => setLanguage(code)}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all"
+                  style={{
+                    background: language === code ? 'rgba(217,119,6,0.15)' : 'transparent',
+                    color:      language === code ? '#D97706' : '#6B7280',
+                    border:     language === code ? '1px solid rgba(217,119,6,0.3)' : '1px solid transparent',
+                    fontSize:   '12px',
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontWeight: language === code ? 700 : 400,
+                  }}
+                >
+                  {flag} {label}
+                </button>
+              ))}
+            </div>
+            <span
+              style={{
+                color: charRatio > 0.9 ? '#DC2626' : charRatio > 0.7 ? '#D97706' : '#4B5563',
+                fontSize: '11px',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+            >
+              {charCount}/{MAX_CHARS}
+            </span>
+          </div>
+
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value.slice(0, MAX_CHARS))}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              language === 'sw'
+                ? 'Andika swali lako hapa… (Ctrl+Enter kutuma)'
+                : 'Type your question here… (Ctrl+Enter to submit)'
+            }
+            rows={3}
+            disabled={loading}
+            className="w-full resize-none outline-none bg-transparent px-5 pt-4 pb-2"
+            style={{
+              color:       '#F9FAFB',
+              fontSize:    '15px',
+              fontFamily:  "'DM Sans', sans-serif",
+              lineHeight:  1.6,
+              caretColor:  '#D97706',
+            }}
+          />
+
+          {/* Submit row */}
+          <div className="flex items-center justify-between px-4 pb-3 pt-1">
+            <p
+              style={{ color: '#374151', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Maswali yako hayahifadhiwa · Your questions are not stored
+            </p>
+            <button
+              onClick={() => submitQuestion()}
+              disabled={loading || !question.trim()}
+              className="flex items-center gap-2 font-bold rounded-xl px-5 py-2.5 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: (!loading && question.trim()) ? 'linear-gradient(135deg, #D97706, #F59E0B)' : '#1F2937',
+                color:      (!loading && question.trim()) ? '#0A0A0A' : '#4B5563',
+                fontSize:   '13px',
+                fontFamily: "'DM Sans', sans-serif",
+                boxShadow:  (!loading && question.trim()) ? '0 4px 14px rgba(217,119,6,0.3)' : 'none',
+                transform:  (!loading && question.trim()) ? 'translateY(0)' : undefined,
+              }}
+            >
+              {loading ? (
+                <>
+                  <div
+                    className="w-4 h-4 rounded-full border-2 border-transparent"
+                    style={{ borderTopColor: '#D97706', animation: 'spin 0.8s linear infinite' }}
+                  />
+                  Inatafuta…
+                </>
+              ) : (
+                <>TAFUTA UKWELI →</>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Session History (localStorage only) ── */}
+        {history.length > 0 && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowHistory((v) => !v)}
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-colors"
+              style={{ color: '#4B5563', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              <span>{showHistory ? '▾' : '▸'}</span>
+              Historia ya Maswali / Session History (localStorage tu · never sent to server)
+            </button>
+            {showHistory && (
+              <div className="mt-2 flex flex-col gap-1.5">
+                {history.map((h, i) => (
+                  <button
+                    key={i}
+                    onClick={() => submitQuestion(h.text)}
+                    disabled={loading}
+                    className="text-left px-3 py-2 rounded-lg text-xs transition-all"
+                    style={{
+                      background: '#111827',
+                      border: '1px solid #1F2937',
+                      color: '#9CA3AF',
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {h.lang === 'sw' ? '🇰🇪' : '🇬🇧'} "{h.text}"
+                    <span style={{ color: '#4B5563', marginLeft: '8px' }}>
+                      {new Date(h.ts).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Document Inventory ── */}
+        <div className="mt-6">
+          <DocumentInventory />
+        </div>
       </div>
+
+      {/* Bounce animation */}
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: translateY(0); }
+          40%            { transform: translateY(-8px); }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
