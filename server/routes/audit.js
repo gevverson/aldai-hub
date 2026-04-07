@@ -21,7 +21,7 @@ import OAG_CONTEXT from '../data/oag_context.js';
 dotenv.config();
 
 const router  = express.Router();
-const AI_URL  = process.env.AI_SERVICE_URL || 'http://localhost:8001';
+const AI_URL  = process.env.AI_SERVICE_URL || 'http://localhost:8002';
 const TIMEOUT = 25_000; // 25s — Claude can be slow on first token
 
 // ── Anthropic client (direct fallback) ─────────────────────

@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "ai": "cd ../ai-service && ./venv/bin/uvicorn main:app --port 8002 --reload",
+    "ai:seed": "cd ../ai-service && ./venv/bin/python -c \"from ingest import ingest_text_directly; print('DB ready')\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
