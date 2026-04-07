@@ -1,59 +1,81 @@
 import { useState, useEffect, useRef } from 'react';
 
-const AnimatedCounter = ({ targetValue, duration = 2000, prefix = '', suffix = '', decimals = 0 }) => {
-  const [count, setCount] = useState(0);
-  const counterRef = useRef(null);
-  const [isVisible, setIsVisible] = useState(false);
+/**
+ * AnimatedCounter — counts up from 0 to targetValue when scrolled into view.
+ * Uses IntersectionObserver + rAF with easeOutExpo easing.
+ *
+ * Props:
+ *   targetValue  — number to count to
+ *   duration     — ms (default 2000)
+ *   decimals     — decimal places (default 0)
+ *   prefix       — string before number
+ *   suffix       — string after number
+ *   className    — extra classes on the <span>
+ */
+const easeOutExpo = (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
 
+const AnimatedCounter = ({
+  targetValue,
+  duration = 2000,
+  prefix = '',
+  suffix = '',
+  decimals = 0,
+  className = '',
+}) => {
+  const [count, setCount]       = useState(0);
+  const [triggered, setTriggered] = useState(false);
+  const ref = useRef(null);
+  const rafRef = useRef(null);
+  const startRef = useRef(null);
+
+  // Trigger once on intersection
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
+        if (entry.isIntersecting && !triggered) {
+          setTriggered(true);
           observer.disconnect();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.15 }
     );
-
-    if (counterRef.current) {
-      observer.observe(counterRef.current);
-    }
-
+    if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [triggered]);
 
+  // Animate when triggered
   useEffect(() => {
-    if (!isVisible) return;
+    if (!triggered) return;
 
-    let startTimestamp = null;
+    startRef.current = null;
     const step = (timestamp) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      
-      // Easing function for smoother animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      const raw = easeOutQuart * targetValue;
-      setCount(decimals > 0 ? parseFloat(raw.toFixed(decimals)) : Math.floor(raw));
+      if (!startRef.current) startRef.current = timestamp;
+      const elapsed  = timestamp - startRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased    = easeOutExpo(progress);
+      const value    = eased * targetValue;
+
+      setCount(decimals > 0 ? parseFloat(value.toFixed(decimals)) : Math.floor(value));
 
       if (progress < 1) {
-        window.requestAnimationFrame(step);
+        rafRef.current = requestAnimationFrame(step);
       } else {
         setCount(targetValue);
       }
     };
 
-    window.requestAnimationFrame(step);
-  }, [targetValue, duration, isVisible, decimals]);
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [triggered, targetValue, duration, decimals]);
 
-  // Format number — use toFixed for decimals, commas for integers
-  const formattedCount = decimals > 0
-    ? count.toFixed(decimals)
-    : new Intl.NumberFormat('en-US').format(count);
+  const display =
+    decimals > 0
+      ? count.toFixed(decimals)
+      : new Intl.NumberFormat('en-KE').format(count);
 
   return (
-    <span ref={counterRef}>
-      {prefix}{formattedCount}{suffix}
+    <span ref={ref} className={`font-mono-jet tabular-nums ${className}`}>
+      {prefix}{display}{suffix}
     </span>
   );
 };

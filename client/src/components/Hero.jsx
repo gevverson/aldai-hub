@@ -1,128 +1,226 @@
 import { Link } from 'react-router-dom';
-import AnimatedCounter from './AnimatedCounter';
+import { motion } from 'framer-motion';
 
-const Hero = ({ globalStats }) => {
-  const totalUnaccounted = 4100000000;
+/* ── Animation variants ─────────────────────────────── */
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+  },
+};
 
-  return (
-    <div className="bg-forest-950 relative overflow-hidden">
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } },
+};
 
-      {/* Animated grid background */}
-      <div className="absolute inset-0 opacity-[0.06]"
+const fadeIn = {
+  hidden: { opacity: 0 },
+  show:   { opacity: 1, transition: { duration: 0.5 } },
+};
+
+/* ── Stat Pill ──────────────────────────────────────── */
+const StatPill = ({ value, label, isAlert = false }) => (
+  <motion.div
+    variants={fadeUp}
+    className="flex items-center gap-3 rounded-2xl px-5 py-3"
+    style={{
+      background: isAlert ? 'rgba(220,38,38,0.12)' : 'rgba(217,119,6,0.1)',
+      border: `1px solid ${isAlert ? 'rgba(220,38,38,0.25)' : 'rgba(217,119,6,0.25)'}`,
+    }}
+  >
+    <span
+      className="relative flex h-2.5 w-2.5 flex-shrink-0"
+    >
+      <span
+        className="absolute inline-flex h-full w-full rounded-full opacity-75"
         style={{
-          backgroundImage: `linear-gradient(rgba(251,191,36,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(251,191,36,0.8) 1px, transparent 1px)`,
-          backgroundSize: '48px 48px'
+          background: isAlert ? '#DC2626' : '#D97706',
+          animation: 'ping 1.5s cubic-bezier(0,0,0.2,1) infinite',
+        }}
+      />
+      <span
+        className="relative inline-flex rounded-full h-2.5 w-2.5"
+        style={{ background: isAlert ? '#DC2626' : '#D97706' }}
+      />
+    </span>
+    <div>
+      <p
+        className="font-mono-jet font-bold leading-none"
+        style={{ color: isAlert ? '#FCA5A5' : '#FCD34D', fontSize: '15px' }}
+      >
+        {value}
+      </p>
+      <p
+        className="uppercase tracking-wider leading-none mt-0.5"
+        style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+      >
+        {label}
+      </p>
+    </div>
+  </motion.div>
+);
+
+/* ── Hero ────────────────────────────────────────────── */
+const Hero = ({ globalStats }) => {
+  return (
+    <section
+      className="relative min-h-screen flex flex-col justify-center overflow-hidden noise-overlay"
+      style={{ background: '#0A0A0A' }}
+    >
+      {/* ── Ambient glow ── */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          width: '800px',
+          height: '500px',
+          background: 'radial-gradient(ellipse, rgba(217,119,6,0.12) 0%, transparent 65%)',
+        }}
+      />
+      <div
+        className="absolute bottom-0 right-0 pointer-events-none"
+        style={{
+          width: '500px',
+          height: '400px',
+          background: 'radial-gradient(ellipse, rgba(220,38,38,0.07) 0%, transparent 70%)',
         }}
       />
 
-      {/* Radial glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full opacity-15"
-        style={{ background: 'radial-gradient(ellipse, #f59e0b 0%, transparent 70%)' }}
+      {/* ── Subtle grid overlay ── */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(217,119,6,1) 1px, transparent 1px), linear-gradient(90deg, rgba(217,119,6,1) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }}
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
-
-        {/* Breaking badge */}
-        <div className="flex justify-center mb-6">
-          <div className="flex items-center gap-2 bg-red-900/60 border border-red-700/60 rounded-full px-4 py-1.5 backdrop-blur-sm">
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-            <span className="text-red-300 text-xs font-black uppercase tracking-widest">Nandi County — Under Investigation</span>
-          </div>
-        </div>
-
-        {/* Main Headline */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-display font-black text-white leading-none tracking-tight mb-4">
-            Your Money.{' '}
-            <span className="text-amber-400">Your Projects.</span>
-            <br />
-            <span className="text-amber-400">Your Right</span>{' '}
-            <span className="text-white">to Know.</span>
-          </h1>
-          <p className="text-lg md:text-xl text-forest-300 font-medium mb-2">
-            Pesa Yako. Miradi Yako. Haki Yako ya Kujua.
-          </p>
-          <p className="max-w-2xl mx-auto text-gray-400 text-base leading-relaxed">
-            Official OAG audit data, translated into plain truth for every citizen.
-            Ghost projects exposed. Stolen funds tracked. Evidence mapped in real-time.
-          </p>
-        </div>
-
-        {/* Accountability counter — the big weapon */}
-        <div className="flex justify-center mb-10">
-          <div className="bg-red-950/80 border-2 border-red-700 rounded-2xl px-8 py-5 text-center backdrop-blur-sm shadow-2xl shadow-red-900/30 max-w-sm w-full">
-            <p className="text-red-400 text-xs font-black uppercase tracking-widest mb-1">Total Public Funds Unaccounted For</p>
-            <p className="text-4xl md:text-5xl font-display font-black text-white mb-1">
-              Ksh{' '}
-              <span className="text-red-400">
-                <AnimatedCounter targetValue={4.1} duration={2000} decimals={1} />B
+      {/* ── Content ── */}
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="flex flex-col items-center"
+        >
+          {/* Eyebrow badge */}
+          <motion.div variants={fadeUp} className="mb-8">
+            <div
+              className="inline-flex items-center gap-2.5 rounded-full px-5 py-2"
+              style={{
+                background: 'rgba(220,38,38,0.1)',
+                border: '1px solid rgba(220,38,38,0.3)',
+              }}
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
               </span>
-            </p>
-            <p className="text-red-300/70 text-xs">
-              Payroll fraud · Ghost projects · Stalled infrastructure<br />Source: OAG Kenya Reports FY2019–2021
-            </p>
-          </div>
-        </div>
+              <span
+                className="text-red-300 font-bold uppercase tracking-widest"
+                style={{ fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Nandi County · Under Active EACC Investigation
+              </span>
+            </div>
+          </motion.div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
-          <Link
-            to="/map"
-            className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-forest-950 font-black text-base px-8 py-4 rounded-xl transition-all shadow-xl hover:shadow-amber-500/40 hover:scale-105"
+          {/* ── Main headline ── */}
+          <motion.h1
+            variants={fadeUp}
+            className="font-display leading-none tracking-tight mb-3"
+            style={{ fontSize: 'clamp(64px, 13vw, 130px)' }}
           >
-            🗺️ View Evidence Map
-          </Link>
-          <Link
-            to="/audit"
-            className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold text-base px-8 py-4 rounded-xl transition-all border border-white/20 backdrop-blur-sm"
+            <span style={{ color: '#D97706', display: 'block' }}>PESA YAKO.</span>
+            <span style={{ color: '#F9FAFB', display: 'block' }}>Wapi Ilikwenda?</span>
+          </motion.h1>
+
+          {/* Subtitle translation */}
+          <motion.p
+            variants={fadeUp}
+            className="mb-10"
+            style={{
+              color: '#6B7280',
+              fontSize: '15px',
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: '0.05em',
+              fontStyle: 'italic',
+            }}
           >
-            🤖 Ask AI Auditor
-          </Link>
-          <a
-            href="#wards"
-            className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-forest-300 hover:text-white font-semibold text-base px-8 py-4 rounded-xl transition-all border border-white/10"
+            "Your Money. Where Did It Go?"
+          </motion.p>
+
+          {/* ── Stat pills ── */}
+          <motion.div
+            variants={fadeUp}
+            className="flex flex-wrap items-center justify-center gap-3 mb-12"
           >
-            📍 Check Your Ward
-          </a>
-        </div>
+            <StatPill value="Ksh 3.3B" label="STOLEN" isAlert />
+            <StatPill value="144" label="FACILITIES CLOSED" isAlert />
+            <StatPill value="1,885" label="GHOST WORKERS" isAlert />
+          </motion.div>
 
-        {/* Live Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          {/* ── CTA Buttons ── */}
+          <motion.div
+            variants={fadeUp}
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-14"
+          >
+            <Link
+              to="/"
+              onClick={() => {
+                document.getElementById('wards')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="btn-primary text-base group"
+              style={{ minWidth: '220px' }}
+            >
+              Angalia Wadi Yako
+              <span className="transition-transform group-hover:translate-x-1">→</span>
+            </Link>
+            <Link
+              to="/audit"
+              className="btn-outline text-base"
+              style={{ minWidth: '220px' }}
+            >
+              🤖 Uliza AI Ukaguzi
+            </Link>
+          </motion.div>
 
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center hover:bg-white/8 transition-colors">
-            <p className="text-3xl md:text-4xl font-display font-black text-amber-400 mb-1">
-              <AnimatedCounter targetValue={globalStats?.projectsTracked || 10} duration={1800} />
+          {/* ── Source line ── */}
+          <motion.div variants={fadeIn} className="flex flex-col items-center gap-2">
+            {/* Amber rule */}
+            <div
+              className="w-24 h-px mb-3"
+              style={{ background: 'linear-gradient(to right, transparent, #D97706, transparent)' }}
+            />
+            <p
+              style={{
+                color: '#4B5563',
+                fontSize: '12px',
+                fontFamily: "'DM Sans', sans-serif",
+                maxWidth: '520px',
+                lineHeight: 1.6,
+              }}
+            >
+              Data sourced from the{' '}
+              <span style={{ color: '#9CA3AF', fontWeight: 600 }}>
+                Office of the Auditor-General of Kenya (OAG)
+              </span>
+              , verified against official parliamentary committee records and active EACC files.
             </p>
-            <p className="text-xs font-bold text-forest-400 uppercase tracking-wider">Projects Tracked</p>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm border border-red-900/40 rounded-xl p-4 text-center hover:bg-white/8 transition-colors">
-            <p className="text-3xl md:text-4xl font-display font-black text-red-400 mb-1">
-              <AnimatedCounter targetValue={globalStats?.stalledProjects || 0} duration={1800} />
-            </p>
-            <p className="text-xs font-bold text-forest-400 uppercase tracking-wider">Stalled / Abandoned</p>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm border border-purple-900/40 rounded-xl p-4 text-center hover:bg-white/8 transition-colors">
-            <p className="text-3xl md:text-4xl font-display font-black text-purple-400 mb-1">
-              <AnimatedCounter targetValue={globalStats?.ghostProjects || 0} duration={1800} />
-            </p>
-            <p className="text-xs font-bold text-forest-400 uppercase tracking-wider">Ghost Projects</p>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm border border-green-900/40 rounded-xl p-4 text-center hover:bg-white/8 transition-colors">
-            <p className="text-3xl md:text-4xl font-display font-black text-green-400 mb-1">
-              <AnimatedCounter targetValue={globalStats?.citizensReporting || 42} duration={1800} />
-            </p>
-            <p className="text-xs font-bold text-forest-400 uppercase tracking-wider">Citizens Reporting</p>
-          </div>
-
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
 
-      {/* Bottom border glow */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
-    </div>
+      {/* ── Bottom accent line ── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{
+          background: 'linear-gradient(to right, transparent, rgba(217,119,6,0.4), transparent)',
+        }}
+      />
+    </section>
   );
 };
 

@@ -1,83 +1,103 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-const STATUS_LABELS = {
-  CONFIRMS_GHOST: { label: '👻 Ghost Confirmed', color: 'text-purple-400' },
-  CONFIRMS_STALLED: { label: '🚧 Stalled Confirmed', color: 'text-orange-400' },
-  CONFIRMS_COMPLETE: { label: '✅ Working', color: 'text-green-400' },
-  DISPUTES_OFFICIAL: { label: '⚠️ Disputes Report', color: 'text-yellow-400' },
-};
+/* ── Hardcoded audit alerts — always shown even if API is down ── */
+const STATIC_ALERTS = [
+  '🚨 GHOST PROJECT: Kimaren Girls Secondary — Ksh 3.2M disbursed. School does not exist.',
+  '⚠️ STALLED: Kapsabet Mother & Baby Unit — Ksh 208.8M paid. Incomplete past deadline.',
+  '🔴 144 public health facilities shut down across Nandi County.',
+  '💰 Ksh 3.3 BILLION payroll fraud — 1,885 ghost workers. Active EACC investigation.',
+  '🏭 Kabiyet Dairy Creamery — Ksh 621M spent. Non-operational after 8 YEARS.',
+  '📚 Ksh 50.2M student bursaries sent with NO acknowledgement receipts.',
+  '🏥 Kapsabet County Hospital — Medical insurance Ksh 175M awarded BEFORE tender evaluation.',
+  '🏫 Land purchased for schools — NO title deeds transferred. Suspected laundering.',
+];
 
 const AlertTicker = () => {
-  const [items, setItems] = useState([]);
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [alerts, setAlerts]   = useState(STATIC_ALERTS);
+  const trackRef              = useRef(null);
 
-  const fallbackItems = [
-    { projectName: 'Kimaren Girls Secondary', ward: 'Kemeloi-Maraba', status: 'CONFIRMS_GHOST', verifierCodename: 'Simba' },
-    { projectName: 'Kapsengere Hospital Phase II', ward: 'Terik', status: 'CONFIRMS_STALLED', verifierCodename: 'Tembo' },
-    { projectName: 'Kabiyet Dairy Creamery', ward: 'Kabiyet', status: 'CONFIRMS_STALLED', verifierCodename: 'Twiga' },
-  ];
-
+  /* Optionally merge live critical alerts from API */
   useEffect(() => {
-    const fetchRecent = async () => {
-      try {
-        const res = await fetch('/api/verifications/recent');
-        const data = await res.json();
-        if (data && data.length > 0) setItems(data);
-        else setItems(fallbackItems);
-      } catch {
-        setItems(fallbackItems);
-      }
+    const merge = (liveData) => {
+      if (!Array.isArray(liveData) || liveData.length === 0) return;
+      const liveAlerts = liveData.map(
+        (p) => `🚨 LIVE: ${p.name} — ${p.ward} Ward — ${p.communityStatus || p.status}`
+      );
+      setAlerts([...liveAlerts, ...STATIC_ALERTS]);
     };
-    fetchRecent();
+
+    fetch('/api/projects?status=critical')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data) merge(data); })
+      .catch(() => {}); // silently keep static fallback
+
+    const id = setInterval(() => {
+      fetch('/api/projects?status=critical')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => { if (data) merge(data); })
+        .catch(() => {});
+    }, 60_000);
+
+    return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (items.length === 0) return;
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIndex((prev) => (prev + 1) % items.length);
-        setVisible(true);
-      }, 400);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [items]);
-
-  if (items.length === 0) return null;
-
-  const current = items[index];
-  const statusInfo = STATUS_LABELS[current.status] || { label: current.status, color: 'text-white' };
+  /* Build the doubled marquee string once alerts are ready */
+  const tickerText = alerts.join('  ·  ');
 
   return (
-    <div className="bg-red-900/95 border-b border-red-700 py-2 px-4 flex items-center gap-3 overflow-hidden">
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="flex h-2.5 w-2.5 relative">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+    <div
+      className="relative overflow-hidden select-none"
+      style={{ background: '#7F1D1D', borderBottom: '1px solid #991B1B' }}
+      aria-label="Breaking alerts ticker"
+    >
+      {/* LEFT fade */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to right, #7F1D1D, transparent)' }}
+      />
+
+      {/* LIVE badge — pinned left */}
+      <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center px-3 gap-2"
+           style={{ background: '#991B1B', borderRight: '1px solid #7F1D1D' }}>
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-400" />
         </span>
-        <span className="text-red-200 text-xs font-black uppercase tracking-widest whitespace-nowrap">LIVE</span>
+        <span
+          className="text-red-100 font-bold uppercase tracking-widest whitespace-nowrap"
+          style={{ fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+        >
+          LIVE
+        </span>
       </div>
-      <div className={`flex-1 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-        <p className="text-xs text-white truncate">
-          <span className="font-bold">Citizen {current.verifierCodename}</span>
-          {' · '}
-          <span className={`font-semibold ${statusInfo.color}`}>{statusInfo.label}</span>
-          {' · '}
-          <span className="text-red-200">{current.projectName}</span>
-          {' — '}
-          <span className="text-red-300">{current.ward} Ward</span>
-        </p>
+
+      {/* Scrolling track */}
+      <div ref={trackRef} className="overflow-hidden" style={{ marginLeft: '72px' }}>
+        <div
+          className="flex whitespace-nowrap"
+          style={{
+            animation: `ticker-scroll ${alerts.length * 5}s linear infinite`,
+            willChange: 'transform',
+          }}
+        >
+          {/* Duplicate text for seamless loop */}
+          {[tickerText, tickerText].map((text, idx) => (
+            <span
+              key={idx}
+              className="pr-16 text-red-100 font-semibold"
+              style={{ fontSize: '13px', lineHeight: '36px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {text}
+            </span>
+          ))}
+        </div>
       </div>
-      <div className="hidden sm:flex gap-1 shrink-0">
-        {items.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIndex(i)}
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === index ? 'bg-white' : 'bg-red-600'}`}
-          />
-        ))}
-      </div>
+
+      {/* RIGHT fade */}
+      <div
+        className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to left, #7F1D1D, transparent)' }}
+      />
     </div>
   );
 };

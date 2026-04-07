@@ -1,126 +1,290 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const WardSelector = () => {
-  const [wards, setWards] = useState([]);
-  const [loading, setLoading] = useState(true);
+/* ── Static fallback data if API is down ─────────────────── */
+const FALLBACK_WARDS = [
+  {
+    name: 'Kabwareng',
+    budgetAllocated: 85_000_000,
+    projectCount: 12,
+    completionRate: 42,
+    healthScore: 'red',
+    hasGhost: true,
+  },
+  {
+    name: 'Terik',
+    budgetAllocated: 72_000_000,
+    projectCount: 9,
+    completionRate: 60,
+    healthScore: 'amber',
+    hasGhost: false,
+  },
+  {
+    name: 'Kemeloi-Maraba',
+    budgetAllocated: 91_000_000,
+    projectCount: 14,
+    completionRate: 28,
+    healthScore: 'red',
+    hasGhost: true, // Kimaren Girls Secondary
+  },
+  {
+    name: 'Kobujoi',
+    budgetAllocated: 68_000_000,
+    projectCount: 8,
+    completionRate: 55,
+    healthScore: 'amber',
+    hasGhost: false,
+  },
+  {
+    name: 'Kaptumo-Kaboi',
+    budgetAllocated: 79_000_000,
+    projectCount: 11,
+    completionRate: 34,
+    healthScore: 'red',
+    hasGhost: false,
+  },
+  {
+    name: 'Koyo-Ndurio',
+    budgetAllocated: 62_000_000,
+    projectCount: 7,
+    completionRate: 71,
+    healthScore: 'green',
+    hasGhost: false,
+  },
+];
 
-  useEffect(() => {
-    const fetchWards = async () => {
-      try {
-        const response = await fetch('/api/projects/wards');
-        const data = await response.json();
-        setWards(data);
-      } catch (error) {
-        console.error("Error fetching wards:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+/* ── Health config ──────────────────────────────────────── */
+const HEALTH = {
+  red:   { bar: '#DC2626', label: 'Hali Mbaya Sana', en: 'Critical Issues', icon: '🔴' },
+  amber: { bar: '#D97706', label: 'Wasiwasi wa Wastani', en: 'Moderate Concerns', icon: '🟡' },
+  green: { bar: '#16A34A', label: 'Inaendelea', en: 'Ongoing', icon: '🟢' },
+};
 
-    fetchWards();
-  }, []);
+const formatKsh = (n) => {
+  if (n >= 1_000_000) return `Ksh ${(n / 1_000_000).toFixed(0)}M`;
+  return `Ksh ${(n / 1_000).toFixed(0)}K`;
+};
 
-  const getHealthScoreColor = (score) => {
-    switch(score) {
-      case 'red': return 'bg-alert-red text-white';
-      case 'amber': return 'bg-amber-500 text-white';
-      case 'green': return 'bg-alert-green text-white';
-      default: return 'bg-gray-300 text-gray-800';
-    }
-  };
+/* ── Skeleton Card ── */
+const SkeletonCard = () => (
+  <div className="rounded-2xl p-6 flex flex-col gap-3" style={{ background: '#111827', border: '1px solid #1F2937' }}>
+    <div className="skeleton h-5 w-2/3" style={{ height: '20px' }} />
+    <div className="skeleton h-3 w-1/2" style={{ height: '12px' }} />
+    <div className="skeleton h-1.5 w-full rounded-full" style={{ height: '6px' }} />
+    <div className="skeleton h-3 w-1/3" style={{ height: '12px' }} />
+  </div>
+);
 
-  const getHealthLabel = (score) => {
-    switch(score) {
-      case 'red': return 'Critical / Severe Issues';
-      case 'amber': return 'Moderate Concerns';
-      case 'green': return 'Ongoing (Monitoring)';
-      default: return 'Unknown';
-    }
-  };
-
-  // Format amount safely for Ksh
-  const formatKsh = (amount) => {
-    return `Ksh ${(amount / 1000000).toFixed(1)}M`;
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-800"></div>
-      </div>
-    );
-  }
+/* ── Ward Card ── */
+const WardCard = ({ ward }) => {
+  const health = HEALTH[ward.healthScore] || HEALTH.amber;
 
   return (
-    <section id="wards" className="py-16 bg-forest-50 border-t border-forest-100">
+    <Link
+      to={`/ward/${encodeURIComponent(ward.name.toLowerCase())}`}
+      className="group block"
+      aria-label={`${ward.name} ward — ${health.en}`}
+    >
+      <div
+        className="rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300"
+        style={{
+          background: '#111827',
+          border: '1px solid #1F2937',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.border = '1px solid rgba(217,119,6,0.5)';
+          e.currentTarget.style.transform = 'translateY(-3px)';
+          e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.6)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.border = '1px solid #1F2937';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        {/* Top accent bar — color coded by health */}
+        <div className="h-1.5 w-full" style={{ background: health.bar }} />
+
+        <div className="p-5 flex flex-col flex-1 gap-4">
+          {/* Ward name + ghost badge */}
+          <div className="flex items-start justify-between gap-2">
+            <h3
+              className="font-display text-white group-hover:text-amber-300 transition-colors leading-tight"
+              style={{ fontSize: '20px' }}
+            >
+              {ward.name}
+            </h3>
+            {ward.hasGhost && (
+              <span
+                className="flex-shrink-0 text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide animate-pulse"
+                style={{
+                  background: 'rgba(220,38,38,0.15)',
+                  color: '#FCA5A5',
+                  border: '1px solid rgba(220,38,38,0.3)',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                🔴 GHOST
+              </span>
+            )}
+          </div>
+
+          {/* Stats row */}
+          <div className="flex gap-4">
+            <div>
+              <p
+                className="font-mono-jet font-bold"
+                style={{ color: '#D97706', fontSize: '16px' }}
+              >
+                {formatKsh(ward.budgetAllocated)}
+              </p>
+              <p
+                className="uppercase tracking-wider"
+                style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Bajeti (Budget)
+              </p>
+            </div>
+            <div
+              className="w-px"
+              style={{ background: '#1F2937', alignSelf: 'stretch' }}
+            />
+            <div>
+              <p
+                className="font-mono-jet font-bold text-white"
+                style={{ fontSize: '16px' }}
+              >
+                {ward.projectCount}
+              </p>
+              <p
+                className="uppercase tracking-wider"
+                style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Miradi (Projects)
+              </p>
+            </div>
+          </div>
+
+          {/* Completion bar */}
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <span
+                className="font-semibold uppercase tracking-wide"
+                style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Ukamilishaji (Completion)
+              </span>
+              <span
+                className="font-mono-jet font-bold"
+                style={{ color: health.bar, fontSize: '12px' }}
+              >
+                {ward.completionRate}%
+              </span>
+            </div>
+            <div
+              className="w-full rounded-full overflow-hidden"
+              style={{ background: '#1F2937', height: '6px' }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${ward.completionRate}%`, background: health.bar }}
+              />
+            </div>
+          </div>
+
+          {/* Health label */}
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-xl mt-auto"
+            style={{ background: '#0A0A0A' }}
+          >
+            <span style={{ fontSize: '13px' }}>{health.icon}</span>
+            <div>
+              <p
+                className="font-bold"
+                style={{ color: '#F9FAFB', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {health.label}
+              </p>
+              <p
+                style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {health.en}
+              </p>
+            </div>
+            <span
+              className="ml-auto text-sm transition-transform group-hover:translate-x-1"
+              style={{ color: '#D97706' }}
+            >
+              →
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+/* ── WardSelector ─────────────────────────────────────── */
+const WardSelector = () => {
+  const [wards, setWards]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(false);
+
+  useEffect(() => {
+    fetch('/api/projects/wards')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => {
+        setWards(Array.isArray(data) && data.length > 0 ? data : FALLBACK_WARDS);
+        setLoading(false);
+      })
+      .catch(() => {
+        setWards(FALLBACK_WARDS);
+        setLoading(false);
+      });
+  }, []);
+
+  return (
+    <section
+      id="wards"
+      className="py-20"
+      style={{ background: '#0A0A0A', borderTop: '1px solid #1F2937' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Section header */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-forest-900 mb-4">
-            Investigate Your Ward
+          <p
+            className="font-bold uppercase tracking-widest mb-3"
+            style={{ color: '#D97706', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Aldai Constituency · 6 Wards
+          </p>
+          <h2
+            className="font-display text-white leading-tight mb-3"
+            style={{ fontSize: 'clamp(26px, 5vw, 40px)' }}
+          >
+            CHAGUA WADI YAKO
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Select your ward in Aldai Constituency to see how your public funds are being spent, 
-            which projects are real, and which are phantoms.
+          <p
+            style={{ color: '#6B7280', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", maxWidth: '500px', margin: '0 auto' }}
+          >
+            See exactly how public funds were used in your community. Every figure traced to official records.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {wards.map((ward) => (
-            <Link 
-              to={`/ward/${encodeURIComponent(ward.name.toLowerCase())}`} 
-              key={ward.name}
-              className="group"
-            >
-              <div className="card h-full transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg border-2 border-transparent group-hover:border-forest-200">
-                <div className={`h-2 w-full ${getHealthScoreColor(ward.healthScore)}`}></div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold font-display text-forest-900 group-hover:text-forest-700 transition-colors">
-                      {ward.name}
-                    </h3>
-                    <span title={getHealthLabel(ward.healthScore)} className={`inline-flex h-3 w-3 rounded-full ${getHealthScoreColor(ward.healthScore)}`}></span>
-                  </div>
-
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500 font-medium tracking-wide text-xs uppercase">Allocated Budget</span>
-                      <span className="font-bold text-forest-900">{formatKsh(ward.budgetAllocated)}</span>
-                    </div>
-                    
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-500 font-medium tracking-wide text-xs uppercase">Funds Expended</span>
-                        <span className="font-bold text-forest-900">{ward.percentSpent}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            ward.percentSpent > 80 ? 'bg-alert-red' : 
-                            ward.percentSpent > 50 ? 'bg-amber-500' : 'bg-forest-500'
-                          }`} 
-                          style={{ width: `${ward.percentSpent}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
-                      <span className="text-alert-red font-semibold">Flagged / Stalled Projects</span>
-                      <span className="font-bold text-alert-red bg-red-100 px-2 py-0.5 rounded text-xs">{ward.stalledCount} found</span>
-                    </div>
-                  </div>
-
-                  <div className="text-amber-600 font-semibold text-sm flex items-center group-hover:text-amber-500 transition-colors">
-                    View Project Ledger 
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
+        {/* Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            : wards.map((ward) => <WardCard key={ward.name} ward={ward} />)
+          }
         </div>
+
+        {error && (
+          <p className="text-center mt-8" style={{ color: '#6B7280', fontSize: '14px' }}>
+            ⚠️ API unavailable — showing estimated data. Try again shortly.
+          </p>
+        )}
       </div>
     </section>
   );

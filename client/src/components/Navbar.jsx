@@ -2,137 +2,261 @@ import { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import AlertTicker from './AlertTicker';
 
+const NAV_LINKS = [
+  { to: '/',       label: 'Miradi',  en: 'Projects', exact: true },
+  { to: '/map',    label: 'Mapa',    en: 'Map' },
+  { to: '/report', label: 'Ripoti',  en: 'Report' },
+  { to: '/audit',  label: 'Ukaguzi', en: 'Audit AI' },
+  { to: '/about',  label: 'Kuhusu',  en: 'About' },
+];
+
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [reportCount, setReportCount] = useState(0);
+  const [todayReports, setTodayReports] = useState(null);
 
+  /* Scroll detection */
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  /* Fetch today's anonymous report count */
   useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const res = await fetch('/api/projects/stats');
-        const data = await res.json();
-        setReportCount((data.citizensReporting || 0));
-      } catch {}
+    const fetchCount = () => {
+      fetch('/api/reports/today-count')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d !== null) setTodayReports(d.count ?? d); })
+        .catch(() => {});
     };
     fetchCount();
+    const id = setInterval(fetchCount, 30_000);
+    return () => clearInterval(id);
   }, []);
 
-  const navLinks = [
-    { to: '/', label: 'Home', exact: true },
-    { to: '/map', label: '🗺️ Evidence Map', highlight: true },
-    { to: '/audit', label: 'AI Auditor' },
-    { to: '/report', label: 'File Report' },
-    { to: '/about', label: 'About' },
-  ];
+  /* Close mobile menu on route change */
+  const closeMenu = () => setMenuOpen(false);
 
-  const linkClass = ({ isActive, highlight }) =>
-    `text-sm font-semibold transition-all duration-200 px-3 py-1.5 rounded-lg ${
-      isActive
-        ? 'text-amber-400 bg-white/10'
-        : highlight
-        ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20'
-        : 'text-forest-200 hover:text-white hover:bg-white/10'
-    }`;
+  /* Lock body scroll when menu open */
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
 
   return (
     <>
+      {/* ── Alert ticker sits ABOVE the sticky nav ── */}
       <AlertTicker />
+
+      {/* ─────────────── NAVBAR ─────────────── */}
       <nav
-        className={`sticky top-0 z-[1000] transition-all duration-300 ${
-          scrolled
-            ? 'bg-forest-950/90 backdrop-blur-md shadow-2xl bordered-b border-forest-800'
-            : 'bg-forest-950'
-        }`}
+        role="navigation"
+        aria-label="Main navigation"
+        className="sticky top-0 z-[999] transition-all duration-300"
+        style={{
+          background: scrolled
+            ? 'rgba(10,10,10,0.92)'
+            : '#0A0A0A',
+          backdropFilter: scrolled ? 'blur(14px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(14px)' : 'none',
+          borderBottom: scrolled ? '1px solid #1F2937' : '1px solid transparent',
+          boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.6)' : 'none',
+        }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-16">
 
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5 group" onClick={() => setMenuOpen(false)}>
-              <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <span className="text-lg">👁️</span>
+            {/* ── Logo ── */}
+            <Link
+              to="/"
+              onClick={closeMenu}
+              className="flex items-center gap-3 group flex-shrink-0"
+              aria-label="Macho ya Mwananchi — Home"
+            >
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
+                style={{ background: 'linear-gradient(135deg, #D97706, #F59E0B)' }}
+              >
+                <span className="text-lg leading-none" role="img" aria-label="Eye">👁️</span>
               </div>
-              <div>
-                <p className="text-white font-display font-black text-sm leading-none">Macho ya Mwananchi</p>
-                <p className="text-amber-500 text-[10px] font-semibold leading-none tracking-widest uppercase">Citizen's Eye</p>
+              <div className="leading-tight">
+                <p
+                  className="font-display font-bold text-white leading-none"
+                  style={{ fontSize: '15px', letterSpacing: '0.01em' }}
+                >
+                  MACHO YA MWANANCHI{' '}
+                  <span role="img" aria-label="Kenya flag">🇰🇪</span>
+                </p>
+                <p
+                  className="font-semibold uppercase tracking-widest leading-none mt-0.5"
+                  style={{ fontSize: '9px', color: '#D97706' }}
+                >
+                  Citizen's Eye · Aldai Constituency
+                </p>
               </div>
             </Link>
 
-            {/* Desktop Nav */}
+            {/* ── Desktop Nav Links ── */}
             <div className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
+              {NAV_LINKS.map(({ to, label, en, exact }) => (
                 <NavLink
-                  key={link.to}
-                  to={link.to}
-                  end={link.exact}
-                  className={({ isActive }) => linkClass({ isActive, highlight: link.highlight })}
+                  key={to}
+                  to={to}
+                  end={exact}
+                  className={({ isActive }) =>
+                    `relative flex flex-col items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      isActive
+                        ? 'text-amber-400 bg-amber-500/10'
+                        : 'text-gray-400 hover:text-white hover:bg-white/6'
+                    }`
+                  }
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  {link.label}
+                  {({ isActive }) => (
+                    <>
+                      <span>{label}</span>
+                      <span
+                        style={{ fontSize: '9px', marginTop: '1px', opacity: 0.6 }}
+                        className={isActive ? 'text-amber-300' : 'text-gray-500'}
+                      >
+                        {en}
+                      </span>
+                    </>
+                  )}
                 </NavLink>
               ))}
             </div>
 
-            {/* Report CTA */}
-            <div className="hidden md:flex items-center gap-3">
-              {reportCount > 0 && (
-                <div className="flex items-center gap-1.5 bg-red-900/50 border border-red-700/50 rounded-full px-3 py-1">
-                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-red-300 text-xs font-bold">{reportCount} reporting</span>
-                </div>
-              )}
-              <Link to="/report" className="bg-amber-500 hover:bg-amber-400 text-forest-950 text-xs font-black px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-amber-500/30 hover:shadow-lg">
-                Report Corruption →
+            {/* ── Right: LIVE indicator + CTA ── */}
+            <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+              {/* Live report count */}
+              <div
+                className="flex items-center gap-2 rounded-full px-3 py-1.5"
+                style={{
+                  background: 'rgba(220,38,38,0.12)',
+                  border: '1px solid rgba(220,38,38,0.25)',
+                }}
+                title="Anonymous reports submitted today"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                </span>
+                <span
+                  className="text-red-300 font-bold uppercase tracking-widest"
+                  style={{ fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  ● LIVE
+                </span>
+                {todayReports !== null && (
+                  <span
+                    className="text-red-200 font-mono-jet font-bold"
+                    style={{ fontSize: '11px' }}
+                  >
+                    {todayReports}
+                  </span>
+                )}
+              </div>
+
+              {/* Ripoti CTA */}
+              <Link
+                to="/report"
+                className="font-bold rounded-xl px-4 py-2 transition-all duration-200 hover:scale-105"
+                style={{
+                  background: '#D97706',
+                  color: '#0A0A0A',
+                  fontSize: '13px',
+                  fontFamily: "'DM Sans', sans-serif",
+                  boxShadow: '0 4px 14px rgba(217,119,6,0.3)',
+                }}
+              >
+                Ripoti →
               </Link>
             </div>
 
-            {/* Mobile hamburger */}
+            {/* ── Mobile hamburger ── */}
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden text-forest-200 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-              aria-label="Toggle menu"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="md:hidden p-2 rounded-xl transition-colors"
+              style={{ color: '#9CA3AF' }}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 {menuOpen
                   ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  : <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h16" />}
+                  : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
               </svg>
             </button>
           </div>
         </div>
+      </nav>
 
-        {/* Mobile Menu */}
-        {menuOpen && (
-          <div className="md:hidden bg-forest-950/98 backdrop-blur-md border-t border-forest-800 px-4 py-4 space-y-1">
-            {navLinks.map((link) => (
+      {/* ── Mobile Full-Screen Overlay ── */}
+      {menuOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-[998] flex flex-col"
+          style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(16px)', top: '92px' }}
+        >
+          <div className="flex flex-col flex-1 px-6 py-8 gap-2">
+            {NAV_LINKS.map(({ to, label, en, exact }) => (
               <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.exact}
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) => `${linkClass({ isActive, highlight: link.highlight })} block w-full text-left`}
+                key={to}
+                to={to}
+                end={exact}
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-5 py-4 rounded-2xl transition-all ${
+                    isActive
+                      ? 'bg-amber-500/15 border border-amber-500/30'
+                      : 'border border-transparent hover:bg-white/5'
+                  }`
+                }
               >
-                {link.label}
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`text-xl font-display font-bold ${isActive ? 'text-amber-400' : 'text-white'}`}
+                    >
+                      {label}
+                    </span>
+                    <span className="text-gray-500 text-sm">{en} →</span>
+                  </>
+                )}
               </NavLink>
             ))}
-            <div className="pt-3">
-              <Link
-                to="/report"
-                onClick={() => setMenuOpen(false)}
-                className="block bg-amber-500 hover:bg-amber-400 text-forest-950 text-sm font-black px-4 py-3 rounded-xl transition-all text-center"
-              >
-                🚨 Report Corruption
-              </Link>
-            </div>
           </div>
-        )}
-      </nav>
+
+          {/* Bottom CTA in mobile menu */}
+          <div className="px-6 py-6 border-t" style={{ borderColor: '#1F2937' }}>
+            {todayReports !== null && (
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                </span>
+                <span className="text-red-300 text-sm font-bold">
+                  {todayReports} ripoti leo (reports today)
+                </span>
+              </div>
+            )}
+            <Link
+              to="/report"
+              onClick={closeMenu}
+              className="block w-full text-center font-bold py-4 rounded-2xl text-lg transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #D97706, #F59E0B)',
+                color: '#0A0A0A',
+                fontFamily: "'DM Sans', sans-serif",
+                boxShadow: '0 8px 24px rgba(217,119,6,0.3)',
+              }}
+            >
+              🚨 Ripoti Ufisadi (Report Corruption)
+            </Link>
+          </div>
+        </div>
+      )}
     </>
   );
 };
