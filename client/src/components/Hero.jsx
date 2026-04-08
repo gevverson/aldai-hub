@@ -34,11 +34,8 @@ const StatPill = ({ value, label, isAlert = false }) => (
       className="relative flex h-2.5 w-2.5 flex-shrink-0"
     >
       <span
-        className="absolute inline-flex h-full w-full rounded-full opacity-75"
-        style={{
-          background: isAlert ? '#DC2626' : '#D97706',
-          animation: 'ping 1.5s cubic-bezier(0,0,0.2,1) infinite',
-        }}
+        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+        style={{ background: isAlert ? '#DC2626' : '#D97706' }}
       />
       <span
         className="relative inline-flex rounded-full h-2.5 w-2.5"

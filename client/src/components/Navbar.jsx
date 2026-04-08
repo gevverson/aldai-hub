@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import AlertTicker from './AlertTicker';
 
@@ -14,6 +14,8 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [todayReports, setTodayReports] = useState(null);
+  const [navHeight, setNavHeight] = useState(92);
+  const wrapperRef = useRef(null);
 
   /* Scroll detection */
   useEffect(() => {
@@ -35,6 +37,16 @@ const Navbar = () => {
     return () => clearInterval(id);
   }, []);
 
+  /* Measure wrapper height for mobile overlay positioning */
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    const ro = new ResizeObserver(() => {
+      setNavHeight(wrapperRef.current?.offsetHeight ?? 92);
+    });
+    ro.observe(wrapperRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   /* Close mobile menu on route change */
   const closeMenu = () => setMenuOpen(false);
 
@@ -45,7 +57,7 @@ const Navbar = () => {
   }, [menuOpen]);
 
   return (
-    <>
+    <div ref={wrapperRef}>
       {/* ── Alert ticker sits ABOVE the sticky nav ── */}
       <AlertTicker />
 
@@ -197,7 +209,7 @@ const Navbar = () => {
       {menuOpen && (
         <div
           className="md:hidden fixed inset-0 z-[998] flex flex-col"
-          style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(16px)', top: '92px' }}
+          style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(16px)', top: `${navHeight}px` }}
         >
           <div className="flex flex-col flex-1 px-6 py-8 gap-2">
             {NAV_LINKS.map(({ to, label, en, exact }) => (
@@ -257,7 +269,7 @@ const Navbar = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

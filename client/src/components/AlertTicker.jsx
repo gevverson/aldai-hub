@@ -43,6 +43,8 @@ const AlertTicker = () => {
 
   /* Build the doubled marquee string once alerts are ready */
   const tickerText = alerts.join('  ·  ');
+  // ~14px per character at 13px font-size, scroll at ~80px/s for comfortable reading
+  const scrollDuration = Math.max(20, Math.round(tickerText.length * 0.17));
 
   return (
     <div
@@ -76,7 +78,7 @@ const AlertTicker = () => {
         <div
           className="flex whitespace-nowrap"
           style={{
-            animation: `ticker-scroll ${alerts.length * 5}s linear infinite`,
+            animation: `ticker-scroll ${scrollDuration}s linear infinite`,
             willChange: 'transform',
           }}
         >

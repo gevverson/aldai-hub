@@ -86,21 +86,8 @@ const WardCard = ({ ward }) => {
       aria-label={`${ward.name} ward — ${health.en}`}
     >
       <div
-        className="rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300"
-        style={{
-          background: '#111827',
-          border: '1px solid #1F2937',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.border = '1px solid rgba(217,119,6,0.5)';
-          e.currentTarget.style.transform = 'translateY(-3px)';
-          e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.6)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.border = '1px solid #1F2937';
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
+        className="rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300 border border-[#1F2937] group-hover:border-amber-500/50 group-hover:-translate-y-[3px] group-hover:shadow-[0_16px_48px_rgba(0,0,0,0.6)]"
+        style={{ background: '#111827' }}
       >
         {/* Top accent bar — color coded by health */}
         <div className="h-1.5 w-full" style={{ background: health.bar }} />

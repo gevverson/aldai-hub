@@ -42,7 +42,7 @@ const STATS = [
     suffix: '',
     prefix: '',
     decimals: 0,
-    label: 'VITUO VYA AFYA VILIVYFUNGWA',
+    label: 'VITUO VYA AFYA VILIVYOFUNGWA',
     labelEn: 'Health facilities shut down',
     accent: '#7C3AED',
     bg: 'rgba(124,58,237,0.07)',
