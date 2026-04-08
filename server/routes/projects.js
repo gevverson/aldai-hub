@@ -1,61 +1,149 @@
 import express from 'express';
-import { wards, globalStats, projects as seedProjects } from '../data/seed.js';
-import Project from '../models/Project.js';
+import Project  from '../models/Project.js';
+import { wards, globalStats } from '../data/seed.js';
 
 const router = express.Router();
 
-// Get all projects
-router.get('/', async (req, res) => {
+// ── GET /api/projects ──────────────────────────────────────────
+// Optional query params: ?status=critical | ?ward=kobujoi | ?category=health
+router.get('/', async (req, res, next) => {
   try {
-    const projects = await Project.find({});
-    res.json(projects);
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-});
+    const { status, ward, category } = req.query;
+    const filter = {};
 
-// Get global stats
-router.get('/stats', async (req, res) => {
-  try {
-    const totalProjects = await Project.countDocuments();
-    const stalledProjects = await Project.countDocuments({ communityStatus: { $in: ['STALLED', 'ABANDONED'] } });
-    const ghostProjects = await Project.countDocuments({ communityStatus: 'GHOST PROJECT' });
-    
+    if (ward)     filter.ward     = new RegExp(`^${ward}$`, 'i');
+    if (category) filter.category = new RegExp(`^${category}$`, 'i');
+
+    // ?status=critical → ghost projects + stalled
+    if (status === 'critical') {
+      filter.communityStatus = {
+        $in: ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'MISALLOCATED'],
+      };
+    }
+
+    const projects = await Project.find(filter).sort({ communityStatus: 1, allocated: -1 });
+
     res.json({
-      projectsTracked: totalProjects,
-      stalledProjects: stalledProjects,
-      ghostProjects: ghostProjects,
-      citizensReporting: 42, // Mock number for MVP
-      globalStats
+      success: true,
+      data:    projects,
+      total:   projects.length,
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+  } catch (err) {
+    next(err);
   }
 });
 
-// Get all wards metadata
-router.get('/wards', (req, res) => {
-  res.json(wards);
+// ── GET /api/projects/stats ───────────────────────────────────
+router.get('/stats', async (req, res, next) => {
+  try {
+    const [total, stalled, ghost, abandoned] = await Promise.all([
+      Project.countDocuments(),
+      Project.countDocuments({ communityStatus: { $in: ['STALLED', 'ABANDONED'] } }),
+      Project.countDocuments({ communityStatus: 'GHOST PROJECT' }),
+      Project.countDocuments({ communityStatus: 'ABANDONED' }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        projectsTracked:    total,
+        stalledProjects:    stalled,
+        ghostProjects:      ghost,
+        abandonedProjects:  abandoned,
+        citizensReporting:  42,   // placeholder until Reports collection has real data
+        globalStats,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-// Get projects by ward
-router.get('/ward/:wardName', async (req, res) => {
+// ── GET /api/projects/wards ───────────────────────────────────
+// Returns ward metadata (from seed) merged with live DB counts
+router.get('/wards', async (req, res, next) => {
   try {
-    const wardName = req.params.wardName;
-    const filterRegex = new RegExp(`^${wardName}$`, 'i');
-    
-    const filteredProjects = await Project.find({ ward: filterRegex });
-    
-    const wardMeta = wards.find(
-      w => w.name.toLowerCase() === wardName.toLowerCase()
+    // Enrich each ward with live project counts from DB
+    const enriched = await Promise.all(
+      wards.map(async (ward) => {
+        const regex = new RegExp(`^${ward.name}$`, 'i');
+        const [projectCount, ghostCount, stalledCount] = await Promise.all([
+          Project.countDocuments({ ward: regex }),
+          Project.countDocuments({ ward: regex, communityStatus: 'GHOST PROJECT' }),
+          Project.countDocuments({ ward: regex, communityStatus: { $in: ['STALLED', 'ABANDONED'] } }),
+        ]);
+        return {
+          ...ward,
+          projectCount: projectCount || ward.projectCount,
+          hasGhost:     ghostCount > 0 || ward.hasGhost,
+          stalledCount,
+        };
+      })
     );
 
+    res.json({ success: true, data: enriched, total: enriched.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/projects/map ─────────────────────────────────────
+// Lightweight: only coords + status fields needed for map pins
+router.get('/map', async (req, res, next) => {
+  try {
+    const projects = await Project.find(
+      { lat: { $ne: null }, lng: { $ne: null } },
+      'name ward category allocated year officialStatus communityStatus auditNote lat lng source'
+    );
+
+    res.json({ success: true, data: projects, total: projects.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/projects/ward/:wardName ──────────────────────────
+router.get('/ward/:wardName', async (req, res, next) => {
+  try {
+    const regex    = new RegExp(`^${req.params.wardName}$`, 'i');
+    const wardMeta = wards.find((w) => regex.test(w.name));
+    const projects = await Project.find({ ward: regex }).sort({ communityStatus: 1 });
+
+    if (!wardMeta && projects.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error:   `Ward "${req.params.wardName}" not found`,
+        code:    'WARD_NOT_FOUND',
+      });
+    }
+
     res.json({
-      ward: wardMeta || { name: wardName },
-      projects: filteredProjects
+      success: true,
+      data: {
+        ward:     wardMeta || { name: req.params.wardName },
+        projects,
+      },
+      total: projects.length,
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/projects/:id ─────────────────────────────────────
+router.get('/:id', async (req, res, next) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        error:   'Project not found',
+        code:    'PROJECT_NOT_FOUND',
+      });
+    }
+    res.json({ success: true, data: project });
+  } catch (err) {
+    next(err);
   }
 });
 

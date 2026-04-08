@@ -1,109 +1,209 @@
-import express from 'express';
-import multer from 'multer';
-import path from 'path';
+import express  from 'express';
+import multer   from 'multer';
+import path     from 'path';
 import { fileURLToPath } from 'url';
+import { body, validationResult } from 'express-validator';
 import Verification from '../models/Verification.js';
+import Project      from '../models/Project.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
+const router     = express.Router();
 
-const router = express.Router();
-
-// Animal codenames for anonymous citizens
+// ── Codenames — anonymous identity for verifiers ──────────────
 const CODENAMES = [
   'Simba', 'Tembo', 'Twiga', 'Chui', 'Kifaru', 'Nyati', 'Mbogo', 'Tai',
-  'Korongo', 'Nzige', 'Kanguro', 'Fisi', 'Ngo', 'Kuro', 'Pundamilia',
+  'Korongo', 'Fisi', 'Kuro', 'Pundamilia', 'Swala', 'Duma', 'Nguruwe',
+  'Nungunungu', 'Nguchiro', 'Buni', 'Mbuni', 'Njiwa',
 ];
+const codename = () => CODENAMES[Math.floor(Math.random() * CODENAMES.length)];
 
-const getRandomCodename = () => CODENAMES[Math.floor(Math.random() * CODENAMES.length)];
-
-// Multer disk storage config
+// ── Multer — disk storage, images only ───────────────────────
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `verify-${uniqueSuffix}${path.extname(file.originalname)}`);
+  destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
+  filename:    (req, file, cb) => {
+    const suffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `verify-${suffix}${path.extname(file.originalname)}`);
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  limits:     { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are accepted'), false);
-    }
+    file.mimetype.startsWith('image/')
+      ? cb(null, true)
+      : cb(new Error('Only image files are accepted'));
   },
 });
 
-// POST /api/verifications — Submit photo + GPS evidence
-router.post('/', upload.single('photo'), async (req, res) => {
-  try {
-    const { projectId, projectName, ward, lat, lng, description, status } = req.body;
+// ── Consensus engine ──────────────────────────────────────────
+// Runs after every new verification. Updates project communityStatus
+// if citizen consensus crosses defined thresholds.
+const CONSENSUS_WINDOW_DAYS = 90;
 
-    if (!projectId || !lat || !lng || !description || !status) {
-      return res.status(400).json({ error: 'projectId, lat, lng, description, status are required' });
+const runConsensus = async (projectId) => {
+  const since = new Date();
+  since.setDate(since.getDate() - CONSENSUS_WINDOW_DAYS);
+
+  const verifications = await Verification.find({
+    projectId,
+    createdAt: { $gte: since },
+  });
+
+  if (verifications.length === 0) return;
+
+  // Count by status
+  const counts = verifications.reduce((acc, v) => {
+    acc[v.status] = (acc[v.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const total         = verifications.length;
+  const ghostCount    = counts['CONFIRMS_GHOST']   || 0;
+  const stalledCount  = counts['CONFIRMS_STALLED'] || 0;
+
+  let newStatus = null;
+
+  // 3+ ghost confirmations → GHOST PROJECT — Community Confirmed
+  if (ghostCount >= 3 && ghostCount / total >= 0.6) {
+    newStatus = 'GHOST PROJECT';
+    console.log(`[CONSENSUS] 🚨 ${projectId} → GHOST PROJECT (${ghostCount}/${total} confirmations)`);
+  }
+  // 5+ stalled confirmations → STALLED — Community Confirmed
+  else if (stalledCount >= 5 && stalledCount / total >= 0.6) {
+    newStatus = 'STALLED';
+    console.log(`[CONSENSUS] ⚠️  ${projectId} → STALLED (${stalledCount}/${total} confirmations)`);
+  }
+
+  if (newStatus) {
+    await Project.findByIdAndUpdate(projectId, {
+      communityStatus: newStatus,
+      $set: { [`verificationMeta.lastConsensus`]: new Date() },
+    });
+  }
+};
+
+// ── Validation rules ──────────────────────────────────────────
+const submitRules = [
+  body('projectId')   .notEmpty().withMessage('projectId is required'),
+  body('lat')         .isFloat({ min: -90,  max: 90  }).withMessage('Invalid latitude'),
+  body('lng')         .isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude'),
+  body('description') .trim().notEmpty().isLength({ max: 500 })
+    .withMessage('Description required (max 500 chars)'),
+  body('status')      .isIn(['CONFIRMS_GHOST', 'CONFIRMS_STALLED', 'CONFIRMS_COMPLETE', 'DISPUTES_OFFICIAL'])
+    .withMessage('Invalid status value'),
+];
+
+// ── POST /api/verifications ───────────────────────────────────
+router.post('/', upload.single('photo'), submitRules, async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        error:   errors.array().map((e) => e.msg).join('; '),
+        code:    'VALIDATION_ERROR',
+      });
     }
+
+    const {
+      projectId, projectName, ward,
+      lat, lng,
+      description, status,
+      locationVerified, distanceFromSite, gpsSource,
+    } = req.body;
 
     const verification = new Verification({
       projectId,
-      projectName,
-      ward,
-      lat: parseFloat(lat),
-      lng: parseFloat(lng),
-      description,
-      photoUrl: req.file ? `/uploads/${req.file.filename}` : null,
-      verifierCodename: getRandomCodename(),
+      projectName:      projectName || '',
+      ward:             ward        || '',
+      lat:              parseFloat(lat),
+      lng:              parseFloat(lng),
+      description:      description.trim(),
+      photoUrl:         req.file ? `/uploads/${req.file.filename}` : null,
+      verifierCodename: codename(),
       status,
+      locationVerified: locationVerified === 'true' || locationVerified === true,
+      distanceFromSite: distanceFromSite ? parseInt(distanceFromSite, 10) : null,
+      gpsSource:        gpsSource || 'unavailable',
     });
 
     await verification.save();
 
-    res.status(201).json({ success: true, verification });
-  } catch (error) {
-    console.error('[VERIFICATIONS] POST error:', error);
-    res.status(500).json({ error: 'Failed to save verification' });
+    // Fire consensus engine asynchronously — don't block the response
+    runConsensus(projectId).catch((err) => {
+      console.error(`[CONSENSUS] Error for ${projectId}: ${err.message}`);
+    });
+
+    res.status(201).json({
+      success:      true,
+      data:         verification,
+      message:      'Uthibitisho umewasilishwa. Asante kwa ujasiri wako!',
+    });
+  } catch (err) {
+    next(err);
   }
 });
 
-// GET /api/verifications/map — All verifications (lightweight, for map pins)
-router.get('/map', async (req, res) => {
+// ── GET /api/verifications/map ────────────────────────────────
+// Lightweight endpoint for map pins — all verifications with coords
+router.get('/map', async (req, res, next) => {
   try {
-    const verifications = await Verification.find({}).select(
-      'projectId projectName ward lat lng status verifierCodename photoUrl createdAt'
-    ).sort({ createdAt: -1 });
-    res.json(verifications);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    const verifications = await Verification
+      .find({})
+      .select('projectId projectName ward lat lng status locationVerified verifierCodename photoUrl createdAt')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: verifications, total: verifications.length });
+  } catch (err) {
+    next(err);
   }
 });
 
-// GET /api/verifications/recent — Latest 5 verifications for the alert ticker
-router.get('/recent', async (req, res) => {
+// ── GET /api/verifications/recent ────────────────────────────
+// Latest 5 — for AlertTicker and Navbar
+router.get('/recent', async (req, res, next) => {
   try {
-    const recent = await Verification.find({})
+    const recent = await Verification
+      .find({})
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('projectName ward status verifierCodename photoUrl createdAt');
-    res.json(recent);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+      .select('projectName ward status locationVerified verifierCodename photoUrl createdAt');
+
+    res.json({ success: true, data: recent, total: recent.length });
+  } catch (err) {
+    next(err);
   }
 });
 
-// GET /api/verifications/:projectId — All verifications for a specific project
-router.get('/:projectId', async (req, res) => {
+// ── GET /api/verifications/:projectId ────────────────────────
+// All verifications for a specific project + consensus summary
+router.get('/:projectId', async (req, res, next) => {
   try {
-    const verifications = await Verification.find({ projectId: req.params.projectId }).sort({
-      createdAt: -1,
+    const verifications = await Verification
+      .find({ projectId: req.params.projectId })
+      .sort({ createdAt: -1 });
+
+    // Build status summary for the frontend consensus display
+    const summary = verifications.reduce((acc, v) => {
+      acc[v.status] = (acc[v.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const locationVerifiedCount = verifications.filter((v) => v.locationVerified).length;
+
+    res.json({
+      success: true,
+      data:    verifications,
+      total:   verifications.length,
+      meta: {
+        statusSummary:        summary,
+        locationVerifiedCount,
+      },
     });
-    res.json(verifications);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+  } catch (err) {
+    next(err);
   }
 });
 
