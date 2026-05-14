@@ -16,7 +16,7 @@ const WardPage = () => {
         if (!response.ok) throw new Error('Ward not found');
         
         const json = await response.json();
-        setData(json);
+        setData(json.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -84,7 +84,7 @@ const WardPage = () => {
                </div>
                <div>
                   <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Funds Spent</p>
-                  <p className="font-bold text-amber-600 text-lg">{data.ward.percentSpent}%</p>
+                  <p className="font-bold text-amber-600 text-lg">{data.ward.completionRate ?? '—'}%</p>
                </div>
                <div>
                   <p className="text-xs text-alert-red uppercase tracking-widest font-semibold mb-1">Stalled Issues</p>

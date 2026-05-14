@@ -53,8 +53,8 @@ const VerificationMap = () => {
         ]);
         const projData = await projRes.json();
         const verData = await verRes.json();
-        setProjects(projData.filter(p => p.lat && p.lng));
-        setVerifications(verData);
+        setProjects((projData.data || []).filter(p => p.lat && p.lng));
+        setVerifications(verData.data || []);
       } catch (e) {
         console.error('Map data fetch failed:', e);
       } finally {

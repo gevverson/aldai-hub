@@ -1,6 +1,9 @@
 import express from 'express';
 import Project  from '../models/Project.js';
+import Report   from '../models/Report.js';
 import { wards, globalStats } from '../data/seed.js';
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const router = express.Router();
 
@@ -11,8 +14,8 @@ router.get('/', async (req, res, next) => {
     const { status, ward, category } = req.query;
     const filter = {};
 
-    if (ward)     filter.ward     = new RegExp(`^${ward}$`, 'i');
-    if (category) filter.category = new RegExp(`^${category}$`, 'i');
+    if (ward)     filter.ward     = new RegExp(`^${escapeRegex(ward)}$`, 'i');
+    if (category) filter.category = new RegExp(`^${escapeRegex(category)}$`, 'i');
 
     // ?status=critical → ghost projects + stalled
     if (status === 'critical') {
@@ -36,21 +39,22 @@ router.get('/', async (req, res, next) => {
 // ── GET /api/projects/stats ───────────────────────────────────
 router.get('/stats', async (req, res, next) => {
   try {
-    const [total, stalled, ghost, abandoned] = await Promise.all([
+    const [total, stalled, ghost, abandoned, citizensReporting] = await Promise.all([
       Project.countDocuments(),
       Project.countDocuments({ communityStatus: { $in: ['STALLED', 'ABANDONED'] } }),
       Project.countDocuments({ communityStatus: 'GHOST PROJECT' }),
       Project.countDocuments({ communityStatus: 'ABANDONED' }),
+      Report.countDocuments(),
     ]);
 
     res.json({
       success: true,
       data: {
-        projectsTracked:    total,
-        stalledProjects:    stalled,
-        ghostProjects:      ghost,
-        abandonedProjects:  abandoned,
-        citizensReporting:  42,   // placeholder until Reports collection has real data
+        projectsTracked:   total,
+        stalledProjects:   stalled,
+        ghostProjects:     ghost,
+        abandonedProjects: abandoned,
+        citizensReporting,
         globalStats,
       },
     });
@@ -66,7 +70,7 @@ router.get('/wards', async (req, res, next) => {
     // Enrich each ward with live project counts from DB
     const enriched = await Promise.all(
       wards.map(async (ward) => {
-        const regex = new RegExp(`^${ward.name}$`, 'i');
+        const regex = new RegExp(`^${escapeRegex(ward.name)}$`, 'i');
         const [projectCount, ghostCount, stalledCount] = await Promise.all([
           Project.countDocuments({ ward: regex }),
           Project.countDocuments({ ward: regex, communityStatus: 'GHOST PROJECT' }),
@@ -105,7 +109,7 @@ router.get('/map', async (req, res, next) => {
 // ── GET /api/projects/ward/:wardName ──────────────────────────
 router.get('/ward/:wardName', async (req, res, next) => {
   try {
-    const regex    = new RegExp(`^${req.params.wardName}$`, 'i');
+    const regex    = new RegExp(`^${escapeRegex(req.params.wardName)}$`, 'i');
     const wardMeta = wards.find((w) => regex.test(w.name));
     const projects = await Project.find({ ward: regex }).sort({ communityStatus: 1 });
 

@@ -1,8 +1,10 @@
 import express  from 'express';
 import multer   from 'multer';
 import path     from 'path';
+import { writeFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { body, validationResult } from 'express-validator';
+import sharp        from 'sharp';
 import Verification from '../models/Verification.js';
 import Project      from '../models/Project.js';
 
@@ -113,6 +115,19 @@ router.post('/', upload.single('photo'), submitRules, async (req, res, next) => 
       description, status,
       locationVerified, distanceFromSite, gpsSource,
     } = req.body;
+
+    // Strip EXIF from uploaded photo — fulfils the privacy promise in the UI.
+    // sharp strips all metadata by default (no .withMetadata()).
+    // .rotate() preserves visual orientation based on the EXIF value before discarding it.
+    if (req.file) {
+      try {
+        const stripped = await sharp(req.file.path).rotate().toBuffer();
+        await writeFile(req.file.path, stripped);
+      } catch (exifErr) {
+        console.warn(`[VERIFY] EXIF strip warning for ${req.file.filename}: ${exifErr.message}`);
+        // Non-fatal — continue without blocking the submission
+      }
+    }
 
     const verification = new Verification({
       projectId,

@@ -46,7 +46,7 @@ app.use(cors({
 // ── Request logging ───────────────────────────────────────────
 // Skip vault routes entirely — whistleblower safety
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan(IS_PROD ? 'combined' : 'dev', {
+  app.use(morgan(IS_PROD ? 'tiny' : 'dev', {
     skip: (req) => req.path.startsWith('/api/vault'),
   }));
 }

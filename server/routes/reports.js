@@ -2,6 +2,8 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Report from '../models/Report.js';
 
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const router = express.Router();
 
 const VALID_CATEGORIES = ['stalled', 'ghost', 'health', 'road', 'medicine', 'bursary', 'other'];
@@ -36,7 +38,7 @@ router.get('/today-count', async (req, res, next) => {
 router.get('/', async (req, res, next) => {
   try {
     const { ward, limit = 20, sort = 'newest', page = 1 } = req.query;
-    const filter  = ward ? { ward: new RegExp(`^${ward}$`, 'i') } : {};
+    const filter  = ward ? { ward: new RegExp(`^${escapeRegex(ward)}$`, 'i') } : {};
     const sortDir = sort === 'newest' ? { createdAt: -1 } : { createdAt: 1 };
     const skip    = (Number(page) - 1) * Number(limit);
 

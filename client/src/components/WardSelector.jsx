@@ -221,7 +221,8 @@ const WardSelector = () => {
     fetch('/api/projects/wards')
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
-        setWards(Array.isArray(data) && data.length > 0 ? data : FALLBACK_WARDS);
+        const list = data?.data;
+        setWards(Array.isArray(list) && list.length > 0 ? list : FALLBACK_WARDS);
         setLoading(false);
       })
       .catch(() => {

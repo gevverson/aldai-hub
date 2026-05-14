@@ -10,7 +10,7 @@ const ProjectCard = ({ project }) => {
     if (!id) return;
     fetch(`/api/verifications/${id}`)
       .then(r => r.json())
-      .then(data => setVerificationCount(Array.isArray(data) ? data.length : 0))
+      .then(data => setVerificationCount(data.total || 0))
       .catch(() => {});
   }, [project]);
 

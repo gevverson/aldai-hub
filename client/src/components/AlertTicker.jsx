@@ -28,13 +28,13 @@ const AlertTicker = () => {
 
     fetch('/api/projects?status=critical')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data) merge(data); })
+      .then((data) => { if (data) merge(data.data); })
       .catch(() => {}); // silently keep static fallback
 
     const id = setInterval(() => {
       fetch('/api/projects?status=critical')
         .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (data) merge(data); })
+        .then((data) => { if (data) merge(data.data); })
         .catch(() => {});
     }, 60_000);
 

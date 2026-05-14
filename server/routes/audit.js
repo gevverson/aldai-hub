@@ -213,7 +213,7 @@ router.post('/ingest', async (req, res) => {
   // Simple admin token check (attach proper JWT middleware in production)
   const token = req.headers['x-admin-token'] || req.headers.authorization?.replace('Bearer ', '');
   const adminToken = process.env.ADMIN_TOKEN;
-  if (adminToken && token !== adminToken) {
+  if (!adminToken || token !== adminToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

@@ -154,8 +154,8 @@ const VerifyModal = ({ project, onClose, onSuccess }) => {
       const data = await res.json();
 
       if (data.success) {
-        setSubmitted(data.verification);
-        if (onSuccess) onSuccess(data.verification);
+        setSubmitted(data.data);
+        if (onSuccess) onSuccess(data.data);
       } else {
         throw new Error(data.error || 'Submission failed');
       }

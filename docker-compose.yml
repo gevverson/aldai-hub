@@ -1,0 +1,81 @@
+services:
+
+  # ── MongoDB ────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Node / Express API ─────────────────────────────────────────
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      MONGO_URI: mongodb://mongo:27017/macho-ya-mwananchi
+      CLIENT_URL: ${CLIENT_URL:-http://localhost}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      AI_SERVICE_URL: http://ai-service:8002
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "3001:3001"
+
+  # ── Python RAG / AI service ────────────────────────────────────
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      ALLOWED_ORIGINS: http://server:3001,http://localhost:3001
+    volumes:
+      - chroma_db:/app/chroma_db
+    ports:
+      - "8002:8002"
+
+  # ── React frontend (nginx) ─────────────────────────────────────
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "80:80"
+
+  # ── One-off DB seed (run manually: docker compose run --rm seed) ──
+  seed:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    command: ["node", "seed_db.js"]
+    environment:
+      MONGO_URI: mongodb://mongo:27017/macho-ya-mwananchi
+    depends_on:
+      mongo:
+        condition: service_healthy
+    profiles:
+      - seed
+
+volumes:
+  mongo_data:
+  uploads:
+  chroma_db:

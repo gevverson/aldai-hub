@@ -54,7 +54,7 @@ const ProjectList = ({ projects }) => {
       <div className="space-y-6">
         {filteredProjects.length > 0 ? (
           filteredProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project._id} project={project} />
           ))
         ) : (
           <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
