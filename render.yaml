@@ -1,10 +1,12 @@
-## render.yaml — Macho ya Mwananchi deployment config
-## Render reads this file to know how to build and run each service.
-## Docs: https://render.com/docs/render-yaml-spec
+## render.yaml — Macho ya Mwananchi
+## Render reads this file to deploy all 3 services at once.
+## Connect your GitHub repo in Render → New → Blueprint to use this file.
 
 services:
 
-  # ── React frontend (static site — free on Render) ──────────────
+  # ─────────────────────────────────────────────────────────────
+  # 1. React frontend  (static site — always free on Render)
+  # ─────────────────────────────────────────────────────────────
   - type: web
     name: macho-ya-mwananchi-client
     runtime: static
@@ -13,19 +15,21 @@ services:
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: true
     routes:
-      # Proxy API calls to the Node server
+      # Forward API calls to the Node server so React can reach it
       - type: rewrite
         source: /api/*
         destination: https://macho-ya-mwananchi-server.onrender.com/api/$1
       - type: rewrite
         source: /uploads/*
         destination: https://macho-ya-mwananchi-server.onrender.com/uploads/$1
-      # React Router — serve index.html for all other routes
+      # React Router: every URL that isn't a file serves index.html
       - type: rewrite
         source: /*
         destination: /index.html
 
-  # ── Node / Express API ─────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────
+  # 2. Node / Express API  (web service — free tier)
+  # ─────────────────────────────────────────────────────────────
   - type: web
     name: macho-ya-mwananchi-server
     runtime: node
@@ -36,26 +40,20 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3001
       - key: MONGO_URI
-        sync: false         # set this in Render dashboard (MongoDB Atlas URI)
+        sync: false          # paste your MongoDB Atlas URI in Render dashboard
       - key: ANTHROPIC_API_KEY
-        sync: false         # set this in Render dashboard
+        sync: false          # paste your Anthropic key in Render dashboard
       - key: ADMIN_TOKEN
-        generateValue: true # Render auto-generates a secure random value
+        generateValue: true  # Render creates a random secret automatically
       - key: AI_SERVICE_URL
-        fromService:
-          name: macho-ya-mwananchi-ai
-          type: web
-          property: host
+        value: https://macho-ya-mwananchi-ai.onrender.com
       - key: CLIENT_URL
-        fromService:
-          name: macho-ya-mwananchi-client
-          type: web
-          property: host
+        value: https://macho-ya-mwananchi-client.onrender.com
 
-  # ── Python AI / RAG service ────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────
+  # 3. Python AI / RAG service  (web service — free tier)
+  # ─────────────────────────────────────────────────────────────
   - type: web
     name: macho-ya-mwananchi-ai
     runtime: python
@@ -65,9 +63,8 @@ services:
     plan: free
     envVars:
       - key: ANTHROPIC_API_KEY
-        sync: false         # set this in Render dashboard
+        sync: false
       - key: ADMIN_TOKEN
-        fromService:
-          name: macho-ya-mwananchi-server
-          type: web
-          envVarKey: ADMIN_TOKEN
+        sync: false          # copy the value Render auto-generated for the server
+      - key: ALLOWED_ORIGINS
+        value: https://macho-ya-mwananchi-server.onrender.com,https://macho-ya-mwananchi-client.onrender.com
