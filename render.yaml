@@ -42,7 +42,7 @@ services:
         value: production
       - key: MONGO_URI
         sync: false          # paste your MongoDB Atlas URI in Render dashboard
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY
         sync: false          # paste your Anthropic key in Render dashboard
       - key: ADMIN_TOKEN
         generateValue: true  # Render creates a random secret automatically
@@ -62,7 +62,7 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
     envVars:
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
       - key: ADMIN_TOKEN
         sync: false          # copy the value Render auto-generated for the server

@@ -3,10 +3,11 @@ query.py — RAG Query Handler
 Macho ya Mwananchi | AI Audit RAG Service
 
 Embeds citizen questions via ChromaDB DefaultEmbeddingFunction,
-retrieves relevant OAG audit chunks, sends to Claude with a strict
-civic accountability system prompt.
+retrieves relevant OAG audit chunks, sends to Gemini 2.0 Flash
+with a strict civic accountability system prompt.
 
-No PyTorch. No sentence-transformers. Just chromadb + anthropic.
+Free tier: 1,500 requests/day — more than enough for this platform.
+Get your key at: https://aistudio.google.com/app/apikey
 """
 
 import os
@@ -14,20 +15,19 @@ import logging
 import time
 from typing import Optional
 
-import anthropic
+import google.generativeai as genai
 
 from ingest import get_collection
 
 logger = logging.getLogger(__name__)
 
-# ── Claude configuration ──────────────────────────────────────
-MODEL        = "claude-sonnet-4-20250514"
-MAX_TOKENS   = 1500
+# ── Gemini configuration ──────────────────────────────────────
+MODEL        = "gemini-2.0-flash"
 TOP_K_CHUNKS = 6
 
 # ── System prompt ─────────────────────────────────────────────
-SYSTEM_PROMPT = """You are a civic accountability assistant for Nandi County and Aldai 
-Constituency in Kenya. You help ordinary citizens understand how their 
+SYSTEM_PROMPT = """You are a civic accountability assistant for Nandi County and Aldai
+Constituency in Kenya. You help ordinary citizens understand how their
 public funds were used, based ONLY on official Auditor-General reports.
 
 STRICT RULES:
@@ -90,7 +90,7 @@ async def answer_question(
     1. Detect language
     2. Query ChromaDB for top-K relevant chunks
     3. Build context with citation metadata
-    4. Call Claude with civic system prompt
+    4. Call Gemini 2.0 Flash with civic system prompt
     5. Return structured response
     """
     start = time.time()
@@ -117,10 +117,10 @@ async def answer_question(
         distances = results.get("distances", [[]])[0]
 
         for i, (doc, meta, dist) in enumerate(zip(docs, metas, distances), start=1):
-            doc_name   = meta.get("document_name", "OAG Report")
-            page       = meta.get("page_number", "?")
-            year       = meta.get("year", "")
-            relevance  = f"{max(0, (1 - dist)) * 100:.0f}%"
+            doc_name  = meta.get("document_name", "OAG Report")
+            page      = meta.get("page_number", "?")
+            year      = meta.get("year", "")
+            relevance = f"{max(0, (1 - dist)) * 100:.0f}%"
 
             context_parts.append(
                 f"[SOURCE {i} | {doc_name} | {year} | Page {page} | Relevance: {relevance}]\n"
@@ -139,7 +139,7 @@ async def answer_question(
 
     context_text = "\n---\n".join(context_parts) if context_parts else "No documents retrieved."
 
-    # ── Step 2: Build Claude message ──
+    # ── Step 2: Build prompt ──
     user_message = (
         f"OFFICIAL OAG AUDIT DOCUMENTS (semantic search results):\n{context_text}\n\n"
         f"---\nCITIZEN QUESTION ({lang.upper()}):\n{question}\n\n"
@@ -147,26 +147,25 @@ async def answer_question(
         f"Follow the exact format in your instructions."
     )
 
-    # ── Step 3: Call Claude ──
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    # ── Step 3: Call Gemini ──
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        logger.warning("[QUERY] No API key — returning structured mock")
+        logger.warning("[QUERY] No GEMINI_API_KEY — returning mock response")
         return _mock_response(lang, sources_data, start)
 
     try:
-        client  = anthropic.Anthropic(api_key=api_key)
-        message = client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
+        genai.configure(api_key=api_key)
+        model_client = genai.GenerativeModel(
+            model_name=MODEL,
+            system_instruction=SYSTEM_PROMPT,
         )
-        answer_text = message.content[0].text if message.content else "No response generated."
+        response    = model_client.generate_content(user_message)
+        answer_text = response.text
         elapsed_ms  = int((time.time() - start) * 1000)
 
         logger.info(
             f"[QUERY] ✅ {elapsed_ms}ms | lang={lang} | "
-            f"sources={len(sources_data)} | tokens={message.usage.output_tokens}"
+            f"sources={len(sources_data)} | model={MODEL}"
         )
         return {
             "answer":           answer_text,
@@ -174,20 +173,20 @@ async def answer_question(
             "language":         lang,
             "response_time_ms": elapsed_ms,
             "model":            MODEL,
-            "tokens_used":      message.usage.output_tokens,
         }
 
-    except anthropic.AuthenticationError:
-        return {"error": "AI service authentication failed. Contact admin."}
-    except anthropic.RateLimitError:
-        return {"error": "AI service busy. Please try again in 30 seconds."}
     except Exception as e:
-        logger.error(f"[QUERY] Claude error: {e}")
-        return {"error": f"AI service error: {str(e)[:120]}"}
+        err = str(e)
+        if "API_KEY_INVALID" in err or "PERMISSION_DENIED" in err:
+            return {"error": "AI service authentication failed. Check GEMINI_API_KEY."}
+        if "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
+            return {"error": "AI service quota reached. Try again tomorrow (free tier: 1,500/day)."}
+        logger.error(f"[QUERY] Gemini error: {e}")
+        return {"error": f"AI service error: {err[:120]}"}
 
 
 def _mock_response(lang: str, sources: list, start: float) -> dict:
-    """Dev mode mock — used when ANTHROPIC_API_KEY is not set."""
+    """Dev mode mock — used when GEMINI_API_KEY is not set."""
     elapsed = int((time.time() - start) * 1000)
     text = """📋 JIBU (Answer):
 Kwa mujibu wa ripoti ya OAG ya mwaka 2019/2020, mradi wa Kimaren Girls Secondary ulitengewa Ksh 3,200,000. Wakaguzi walitembelea eneo hilo na hawakupata shule — ni shamba tupu. Pesa zililipwa kwa mkandarasi ambaye hajapatikana.
@@ -207,7 +206,7 @@ Ripoti ya Ukaguzi wa NG-CDF Nandi FY2019/20 — Ukurasa 42
 👉 UNACHOWEZA KUFANYA (What You Can Do):
 - EACC (bure/free): 0800 720 629
 - DCI: 0800 722 203
-- Tumia fomu ya ripoti ya siri katika jukwaa hili (Ripoti anonymously here)"""
+- Tumia fomu ya ripoti ya siri katika jukwaa hili (Report anonymously here)"""
 
     return {
         "answer":           text,
@@ -215,6 +214,5 @@ Ripoti ya Ukaguzi wa NG-CDF Nandi FY2019/20 — Ukurasa 42
         "language":         lang,
         "response_time_ms": elapsed,
         "model":            "mock-dev-mode",
-        "tokens_used":      0,
         "dev_mode":         True,
     }
