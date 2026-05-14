@@ -14,7 +14,7 @@
  */
 
 import express from 'express';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import OAG_CONTEXT from '../data/oag_context.js';
 
@@ -24,10 +24,10 @@ const router  = express.Router();
 const AI_URL  = process.env.AI_SERVICE_URL || 'http://localhost:8002';
 const TIMEOUT = 25_000; // 25s — Claude can be slow on first token
 
-// ── Anthropic client (direct fallback) ─────────────────────
-let anthropic;
-if (process.env.ANTHROPIC_API_KEY) {
-  anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// ── Gemini client (direct fallback) ────────────────────────
+let genAI;
+if (process.env.GEMINI_API_KEY) {
+  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 }
 
 // ── Simple in-memory rate limiter (no extra deps needed) ────
@@ -88,8 +88,8 @@ Rules:
 OAG CONTEXT:
 ${OAG_CONTEXT}`;
 
-async function claudeDirectFallback(question) {
-  if (!anthropic) {
+async function geminiDirectFallback(question) {
+  if (!genAI) {
     return {
       answer: `📋 JIBU: Samahani — AI service haipo available sasa hivi. Tafadhali jaribu tena baadaye.\n\n👉 UNACHOWEZA KUFANYA:\n- EACC: 0800 720 629 (bure)\n- DCI: 0800 722 203`,
       fallback: true,
@@ -97,18 +97,17 @@ async function claudeDirectFallback(question) {
     };
   }
 
-  const msg = await anthropic.messages.create({
-    model:      'claude-sonnet-4-20250514',
-    max_tokens: 1200,
-    system:     FALLBACK_SYSTEM,
-    messages:   [{ role: 'user', content: question }],
+  const model = genAI.getGenerativeModel({
+    model:             'gemini-2.0-flash',
+    systemInstruction: FALLBACK_SYSTEM,
   });
 
+  const result = await model.generateContent(question);
   return {
-    answer:   msg.content[0]?.text || 'No response generated.',
+    answer:  result.response.text(),
     fallback: true,
-    model:    'claude-sonnet-4-20250514-direct',
-    sources:  [],
+    model:   'gemini-2.0-flash-direct',
+    sources: [],
   };
 }
 
@@ -185,9 +184,9 @@ router.post('/query', async (req, res) => {
 
   // ── Fallback: Direct Claude + OAG text context ──
   try {
-    const fallback = await claudeDirectFallback(text);
+    const fallback = await geminiDirectFallback(text);
     const elapsed  = Date.now() - startTime;
-    console.log(`[AUDIT] ✅ Direct Claude fallback answered in ${elapsed}ms`);
+    console.log(`[AUDIT] ✅ Gemini direct fallback answered in ${elapsed}ms`);
 
     return res.json({
       success:          true,
@@ -196,7 +195,7 @@ router.post('/query', async (req, res) => {
       language:         language || 'auto',
       response_time_ms: elapsed,
       model:            fallback.model,
-      service:          'claude-direct-fallback',
+      service:          'gemini-direct-fallback',
       note:             'Python RAG service offline — using built-in knowledge base',
     });
   } catch (err) {
@@ -267,8 +266,8 @@ router.get('/status', async (req, res) => {
   } catch {
     return res.json({
       python_service: 'offline',
-      fallback:       anthropic ? 'claude-direct' : 'unavailable',
-      note:           'Direct Claude fallback active',
+      fallback:       genAI ? 'gemini-direct' : 'unavailable',
+      note:           'Direct Gemini fallback active',
     });
   }
 });
