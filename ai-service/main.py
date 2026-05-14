@@ -258,7 +258,7 @@ async def health():
         "service":    "Macho ya Mwananchi AI Audit Service",
         "model":      query_module.MODEL,
         "documents":  len(docs),
-        "api_key_set": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "api_key_set": bool(os.getenv("GEMINI_API_KEY")),
         "message":    "Ukweli ni nguvu. 🇰🇪",
     }
 
@@ -295,7 +295,7 @@ async def ingest_pdf_endpoint(
     Protected by X-Admin-Token header (must match ADMIN_TOKEN env var).
     """
     admin_token = os.getenv("ADMIN_TOKEN", "")
-    if admin_token and x_admin_token != admin_token:
+    if not admin_token or x_admin_token != admin_token:
         raise HTTPException(status_code=401, detail="Unauthorized: invalid admin token")
 
     if not file.filename.lower().endswith(".pdf"):

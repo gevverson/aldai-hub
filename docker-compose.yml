@@ -24,7 +24,7 @@ services:
       PORT: 3001
       MONGO_URI: mongodb://mongo:27017/macho-ya-mwananchi
       CLIENT_URL: ${CLIENT_URL:-http://localhost}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
       ADMIN_TOKEN: ${ADMIN_TOKEN}
       AI_SERVICE_URL: http://ai-service:8002
     depends_on:
@@ -42,7 +42,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
       ADMIN_TOKEN: ${ADMIN_TOKEN}
       ALLOWED_ORIGINS: http://server:3001,http://localhost:3001
     volumes:
