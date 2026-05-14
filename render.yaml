@@ -1,0 +1,73 @@
+## render.yaml — Macho ya Mwananchi deployment config
+## Render reads this file to know how to build and run each service.
+## Docs: https://render.com/docs/render-yaml-spec
+
+services:
+
+  # ── React frontend (static site — free on Render) ──────────────
+  - type: web
+    name: macho-ya-mwananchi-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: true
+    routes:
+      # Proxy API calls to the Node server
+      - type: rewrite
+        source: /api/*
+        destination: https://macho-ya-mwananchi-server.onrender.com/api/$1
+      - type: rewrite
+        source: /uploads/*
+        destination: https://macho-ya-mwananchi-server.onrender.com/uploads/$1
+      # React Router — serve index.html for all other routes
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # ── Node / Express API ─────────────────────────────────────────
+  - type: web
+    name: macho-ya-mwananchi-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: MONGO_URI
+        sync: false         # set this in Render dashboard (MongoDB Atlas URI)
+      - key: ANTHROPIC_API_KEY
+        sync: false         # set this in Render dashboard
+      - key: ADMIN_TOKEN
+        generateValue: true # Render auto-generates a secure random value
+      - key: AI_SERVICE_URL
+        fromService:
+          name: macho-ya-mwananchi-ai
+          type: web
+          property: host
+      - key: CLIENT_URL
+        fromService:
+          name: macho-ya-mwananchi-client
+          type: web
+          property: host
+
+  # ── Python AI / RAG service ────────────────────────────────────
+  - type: web
+    name: macho-ya-mwananchi-ai
+    runtime: python
+    rootDir: ai-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false         # set this in Render dashboard
+      - key: ADMIN_TOKEN
+        fromService:
+          name: macho-ya-mwananchi-server
+          type: web
+          envVarKey: ADMIN_TOKEN
