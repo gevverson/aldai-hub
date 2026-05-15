@@ -52,6 +52,21 @@ services:
         value: https://macho-ya-mwananchi-client.onrender.com
 
   # ─────────────────────────────────────────────────────────────
+  # 2b. One-off DB seed job — trigger manually from Render dashboard
+  #     Render → Jobs → macho-ya-mwananchi-seed → Run Job
+  # ─────────────────────────────────────────────────────────────
+  - type: job
+    name: macho-ya-mwananchi-seed
+    runtime: node
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: node seed_db.js
+    plan: free
+    envVars:
+      - key: MONGO_URI
+        sync: false          # paste your MongoDB Atlas URI in Render dashboard
+
+  # ─────────────────────────────────────────────────────────────
   # 3. Python AI / RAG service  (web service — free tier)
   # ─────────────────────────────────────────────────────────────
   - type: web
