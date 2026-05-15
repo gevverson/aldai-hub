@@ -1,10 +1,13 @@
 import mongoose from 'mongoose';
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/macho-ya-mwananchi';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 5_000; // ms
 
 const connectDB = async (attempt = 1) => {
+  // Read MONGO_URI lazily here — NOT at module load time — so that
+  // dotenv.config() in the caller (seed_db.js / server.js) runs first.
+  const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/macho-ya-mwananchi';
+
   try {
     const conn = await mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 10_000, // fail fast if server unreachable
