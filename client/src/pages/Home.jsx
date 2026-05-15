@@ -136,7 +136,7 @@ const ReportsFeed = () => {
                 className="font-bold uppercase tracking-widest"
                 style={{ color: '#DC2626', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
               >
-                Inasasishwa Kila Dakika 30 · Refreshes Every 30s
+                Inasasishwa Kila Sekunde 30 · Refreshes Every 30s
               </span>
             </div>
             <h2
