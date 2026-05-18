@@ -29,7 +29,7 @@ const SEVERITY_META = {
 
 /* ═══════════════════════════════════════════════════════════
    PARSE STRUCTURED ANSWER
-   Parses Claude's emoji-section formatted text into blocks
+   Parses Gemini's emoji-section formatted text into blocks
 ═══════════════════════════════════════════════════════════ */
 function parseAnswer(text) {
   if (!text) return null;
@@ -444,7 +444,7 @@ const DocumentInventory = () => {
           <span
             style={{ color: isOnline ? '#4ADE80' : '#F59E0B', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
           >
-            {isOnline ? 'RAG Online' : 'Direct Claude'}
+            {isOnline ? 'RAG Online' : 'Direct Gemini'}
           </span>
         </div>
       </div>

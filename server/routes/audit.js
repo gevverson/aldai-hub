@@ -2,17 +2,12 @@
  * server/routes/audit.js
  * Macho ya Mwananchi — AI Audit Route
  *
- * Proxies citizen Q&A requests to the Python RAG microservice at :8001.
- * Falls back to direct Claude API (with OAG knowledge base) if Python
+ * Proxies citizen Q&A requests to the Python RAG microservice at :8002.
+ * Falls back to direct Gemini API (with OAG knowledge base) if Python
  * service is unreachable — so citizens always get an answer.
- *
- * Endpoints:
- *   POST /api/audit/query     ← Main Q&A (rate-limited: 20 req/IP/hr)
- *   POST /api/audit/ingest    ← Admin: forward PDF upload to Python service
- *   GET  /api/audit/documents ← List indexed documents
- *   GET  /api/audit/status    ← Python service health check
  */
 
+import crypto from 'crypto';
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
@@ -20,40 +15,95 @@ import OAG_CONTEXT from '../data/oag_context.js';
 
 dotenv.config();
 
-const router  = express.Router();
-const AI_URL  = process.env.AI_SERVICE_URL || 'http://localhost:8002';
-const TIMEOUT = 25_000; // 25s — Claude can be slow on first token
+const TIMEOUT_MS = 25_000;
+const PYTHON_RETRY_ATTEMPTS = 2;
+const GEMINI_RETRY_ATTEMPTS = 2;
+const RETRY_BASE_DELAY_MS = 350;
 
-// ── Gemini client (direct fallback) ────────────────────────
-let genAI;
-if (process.env.GEMINI_API_KEY) {
-  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const RATE_LIMIT = 20;
+const RATE_WINDOW_SECONDS = 3600;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ── Simple in-memory rate limiter (no extra deps needed) ────
-// Key: IP address → { count, resetAt }
-const rateLimitStore = new Map();
-const RATE_LIMIT     = 20;   // requests
-const RATE_WINDOW    = 3600; // seconds (1 hour)
-
-function checkRateLimit(ip) {
-  const now  = Math.floor(Date.now() / 1000);
-  const entry = rateLimitStore.get(ip);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT) {
-    return false;
-  }
-  entry.count++;
-  return true;
+function redactIp(ip = '') {
+  return ip ? `${ip.slice(0, 12)}…` : 'unknown';
 }
 
-// ── Direct Claude fallback (uses OAG text knowledge base) ──
-const FALLBACK_SYSTEM = `You are a civic accountability assistant for Nandi County and Aldai 
-Constituency in Kenya. You help citizens understand how public funds were misused, 
+function createAuditError(message, extra = {}) {
+  const err = new Error(message);
+  Object.assign(err, extra);
+  return err;
+}
+
+function isTransientError(err) {
+  if (!err) return false;
+  if (err.name === 'AbortError') return true;
+  if (typeof err.status === 'number') return err.status >= 500 || err.status === 429;
+
+  const text = `${err.message || ''}`.toLowerCase();
+  return (
+    text.includes('timeout') ||
+    text.includes('timed out') ||
+    text.includes('econnreset') ||
+    text.includes('socket hang up') ||
+    text.includes('temporar') ||
+    text.includes('try again')
+  );
+}
+
+async function withRetry(operation, {
+  attempts,
+  baseDelayMs,
+  shouldRetry,
+  onRetry,
+}) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await operation(attempt);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts || !shouldRetry(error)) break;
+
+      const waitMs = baseDelayMs * (2 ** (attempt - 1));
+      if (onRetry) onRetry({ attempt, waitMs, error });
+      await sleep(waitMs);
+    }
+  }
+
+  throw lastError;
+}
+
+function validateAuditConfig({
+  env = process.env,
+  strict = env.NODE_ENV === 'production',
+} = {}) {
+  const warnings = [];
+
+  if (!env.AI_SERVICE_URL) {
+    warnings.push('AI_SERVICE_URL not set; default http://localhost:8002 will be used.');
+  } else {
+    try {
+      new URL(env.AI_SERVICE_URL);
+    } catch {
+      throw new Error('Invalid AI_SERVICE_URL. Expected an absolute URL.');
+    }
+  }
+
+  if (!env.GEMINI_API_KEY) {
+    const message = 'GEMINI_API_KEY is not set; direct Gemini fallback cannot answer when Python service fails.';
+    if (strict) throw new Error(message);
+    warnings.push(message);
+  }
+
+  return { warnings };
+}
+
+const FALLBACK_SYSTEM = `You are a civic accountability assistant for Nandi County and Aldai
+Constituency in Kenya. You help citizens understand how public funds were misused,
 based ONLY on official Auditor-General reports.
 
 Format EVERY answer exactly:
@@ -80,7 +130,7 @@ Ksh [amount] — [what it was for]
 
 Rules:
 - If question is Swahili → answer in Swahili
-- If English → answer in English  
+- If English → answer in English
 - Only use facts from the OAG context provided
 - Never soften the truth
 - Never mention internal system architecture
@@ -88,188 +138,338 @@ Rules:
 OAG CONTEXT:
 ${OAG_CONTEXT}`;
 
-async function geminiDirectFallback(question) {
-  if (!genAI) {
-    return {
-      answer: `📋 JIBU: Samahani — AI service haipo available sasa hivi. Tafadhali jaribu tena baadaye.\n\n👉 UNACHOWEZA KUFANYA:\n- EACC: 0800 720 629 (bure)\n- DCI: 0800 722 203`,
-      fallback: true,
-      model: 'unavailable',
-    };
+function buildGeminiFallback(geminiApiKey, { geminiFallbackFn } = {}) {
+  if (geminiFallbackFn) return geminiFallbackFn;
+
+  let genAI;
+  if (geminiApiKey) {
+    genAI = new GoogleGenerativeAI(geminiApiKey);
   }
 
-  const model = genAI.getGenerativeModel({
-    model:             'gemini-2.0-flash',
-    systemInstruction: FALLBACK_SYSTEM,
-  });
+  return async function geminiDirectFallback(question) {
+    if (!genAI) {
+      return {
+        answer: '📋 JIBU: Samahani — huduma ya AI haipo available sasa hivi. Tafadhali jaribu tena baadaye.\n\n👉 UNACHOWEZA KUFANYA:\n- EACC: 0800 720 629 (bure)\n- DCI: 0800 722 203',
+        fallback: true,
+        model: 'unavailable',
+      };
+    }
 
-  const result = await model.generateContent(question);
-  return {
-    answer:  result.response.text(),
-    fallback: true,
-    model:   'gemini-2.0-flash-direct',
-    sources: [],
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: FALLBACK_SYSTEM,
+    });
+
+    const result = await model.generateContent(question);
+    return {
+      answer: result.response.text(),
+      fallback: true,
+      model: 'gemini-2.0-flash-direct',
+      sources: [],
+    };
   };
 }
 
-// ── POST /api/audit/query ────────────────────────────────────
-router.post('/query', async (req, res) => {
-  const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+export function createAuditRouter({
+  fetchImpl = fetch,
+  alertFetchImpl = fetch,
+  aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8002',
+  geminiApiKey = process.env.GEMINI_API_KEY,
+  alertWebhook = process.env.AUDIT_ALERT_WEBHOOK,
+  geminiFallbackFn,
+  logger = console,
+} = {}) {
+  const router = express.Router();
+  const rateLimitStore = new Map();
+  const geminiDirectFallback = buildGeminiFallback(geminiApiKey, { geminiFallbackFn });
 
-  // Rate limit
-  if (!checkRateLimit(clientIp)) {
-    return res.status(429).json({
-      error:   'Umefika kikomo cha maswali. Jaribu tena baada ya saa moja.',
-      errorEn: 'Rate limit exceeded. Try again in 1 hour.',
-    });
+  function telemetry(level, payload) {
+    const line = `[AUDIT_TELEMETRY] ${JSON.stringify(payload)}`;
+    logger[level](line);
   }
 
-  const { question, query, language, ward_context } = req.body;
-  const text = (question || query || '').trim();
-
-  if (!text || text.length < 3) {
-    return res.status(400).json({ error: 'Question is required (min 3 characters)' });
+  async function sendAlert(payload) {
+    if (!alertWebhook) return;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      await alertFetchImpl(alertWebhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+    } catch (err) {
+      telemetry('warn', {
+        event: 'alert_dispatch_failed',
+        request_id: payload.request_id,
+        reason: err.message,
+      });
+    }
   }
-  if (text.length > 1000) {
-    return res.status(400).json({ error: 'Question too long (max 1000 characters)' });
+
+  function checkRateLimit(ip) {
+    const now = Math.floor(Date.now() / 1000);
+    const entry = rateLimitStore.get(ip);
+
+    if (!entry || now > entry.resetAt) {
+      rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_WINDOW_SECONDS });
+      return true;
+    }
+    if (entry.count >= RATE_LIMIT) return false;
+
+    entry.count += 1;
+    return true;
   }
 
-  // Log metadata — NOT the question text (privacy)
-  console.log(
-    `[AUDIT] query | ip=${clientIp.slice(0, 12)}… | ` +
-    `lang=${language || 'auto'} | ward=${ward_context || 'none'} | ` +
-    `chars=${text.length} | ${new Date().toISOString()}`
-  );
+  router.post('/query', async (req, res) => {
+    const requestId = crypto.randomUUID();
+    const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+    const { question, query, language, ward_context } = req.body;
+    const text = (question || query || '').trim();
 
-  const startTime = Date.now();
-
-  // ── Try Python RAG service first ──
-  try {
-    const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), TIMEOUT);
-
-    const pyRes = await fetch(`${AI_URL}/query`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ question: text, language, ward_context }),
-      signal:  controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!pyRes.ok) {
-      const errBody = await pyRes.text();
-      throw new Error(`Python service HTTP ${pyRes.status}: ${errBody.slice(0, 100)}`);
+    if (!checkRateLimit(clientIp)) {
+      telemetry('warn', {
+        event: 'rate_limited',
+        request_id: requestId,
+        ip: redactIp(clientIp),
+      });
+      return res.status(429).json({
+        error: 'Umefika kikomo cha maswali. Jaribu tena baada ya saa moja.',
+        errorEn: 'Rate limit exceeded. Try again in 1 hour.',
+        code: 'RATE_LIMIT_EXCEEDED',
+        request_id: requestId,
+      });
     }
 
-    const data = await pyRes.json();
-    const elapsed = Date.now() - startTime;
-    console.log(`[AUDIT] ✅ Python RAG answered in ${elapsed}ms`);
+    if (!text || text.length < 3) {
+      return res.status(400).json({
+        error: 'Question is required (min 3 characters)',
+        code: 'INVALID_QUESTION',
+        request_id: requestId,
+      });
+    }
 
-    return res.json({
-      success:          true,
-      answer:           data.answer,
-      sources:          data.sources || [],
-      language:         data.language || language || 'en',
-      response_time_ms: elapsed,
-      model:            data.model,
-      service:          'python-rag',
+    if (text.length > 1000) {
+      return res.status(400).json({
+        error: 'Question too long (max 1000 characters)',
+        code: 'QUESTION_TOO_LONG',
+        request_id: requestId,
+      });
+    }
+
+    const startTime = Date.now();
+
+    telemetry('log', {
+      event: 'audit_query_received',
+      request_id: requestId,
+      ip: redactIp(clientIp),
+      language: language || 'auto',
+      ward: ward_context || 'none',
+      chars: text.length,
     });
 
-  } catch (pyErr) {
-    const isTimeout = pyErr.name === 'AbortError';
-    console.warn(
-      `[AUDIT] Python service ${isTimeout ? 'TIMEOUT' : 'UNREACHABLE'}: ${pyErr.message} — ` +
-      'falling back to direct Claude'
-    );
-  }
+    let pythonError = null;
 
-  // ── Fallback: Direct Claude + OAG text context ──
-  try {
-    const fallback = await geminiDirectFallback(text);
-    const elapsed  = Date.now() - startTime;
-    console.log(`[AUDIT] ✅ Gemini direct fallback answered in ${elapsed}ms`);
+    try {
+      const pyRes = await withRetry(async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        try {
+          const response = await fetchImpl(`${aiUrl}/query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: text, language, ward_context }),
+            signal: controller.signal,
+          });
 
-    return res.json({
-      success:          true,
-      answer:           fallback.answer,
-      sources:          fallback.sources || [],
-      language:         language || 'auto',
-      response_time_ms: elapsed,
-      model:            fallback.model,
-      service:          'gemini-direct-fallback',
-      note:             'Python RAG service offline — using built-in knowledge base',
-    });
-  } catch (err) {
-    console.error(`[AUDIT] Both services failed: ${err.message}`);
-    return res.status(503).json({
-      error:   'Huduma ya AI haipo sasa hivi. Tafadhali jaribu tena baadaye.',
-      errorEn: 'AI service temporarily unavailable. Please try again.',
-    });
-  }
-});
+          if (!response.ok) {
+            const errBody = await response.text();
+            throw createAuditError(
+              `Python service HTTP ${response.status}: ${errBody.slice(0, 200)}`,
+              { status: response.status, stage: 'python-rag' },
+            );
+          }
 
-// ── POST /api/audit/ingest (JWT-protected, proxies to Python) ─
-router.post('/ingest', async (req, res) => {
-  // Simple admin token check (attach proper JWT middleware in production)
-  const token = req.headers['x-admin-token'] || req.headers.authorization?.replace('Bearer ', '');
-  const adminToken = process.env.ADMIN_TOKEN;
-  if (!adminToken || token !== adminToken) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    // Proxy the multipart form data to Python service
-    // The client must send multipart — we forward raw
-    const pyRes = await fetch(`${AI_URL}/ingest`, {
-      method:  'POST',
-      headers: { ...req.headers, 'x-admin-token': token || '' },
-      body:    req,       // stream through
-      duplex:  'half',
-    });
-
-    const data = await pyRes.json();
-    return res.status(pyRes.status).json(data);
-  } catch (err) {
-    console.error(`[AUDIT INGEST] Error: ${err.message}`);
-    return res.status(503).json({ error: 'Python ingestion service unreachable' });
-  }
-});
-
-// ── GET /api/audit/documents ─────────────────────────────────
-router.get('/documents', async (req, res) => {
-  try {
-    const pyRes = await fetch(`${AI_URL}/documents`, { signal: AbortSignal.timeout(5000) });
-    if (!pyRes.ok) throw new Error(`HTTP ${pyRes.status}`);
-    const data = await pyRes.json();
-    return res.json(data);
-  } catch {
-    // Fallback: return the static built-in document list
-    return res.json({
-      count: 1,
-      documents: [
-        {
-          document_name: 'OAG_BUILTIN_NANDI_KNOWLEDGE',
-          year:          '2018–2024',
-          source:        'OAG Kenya (Built-in)',
+          return response;
+        } finally {
+          clearTimeout(timeout);
+        }
+      }, {
+        attempts: PYTHON_RETRY_ATTEMPTS,
+        baseDelayMs: RETRY_BASE_DELAY_MS,
+        shouldRetry: isTransientError,
+        onRetry: ({ attempt, waitMs, error }) => {
+          telemetry('warn', {
+            event: 'python_retry',
+            request_id: requestId,
+            next_attempt: attempt + 1,
+            wait_ms: waitMs,
+            reason: error.message,
+          });
         },
-      ],
-      note: 'Python RAG service offline — showing built-in documents only',
-    });
-  }
-});
+      });
 
-// ── GET /api/audit/status ─────────────────────────────────────
-router.get('/status', async (req, res) => {
-  try {
-    const pyRes = await fetch(`${AI_URL}/health`, { signal: AbortSignal.timeout(4000) });
-    const data  = await pyRes.json();
-    return res.json({ python_service: 'online', ...data });
-  } catch {
-    return res.json({
-      python_service: 'offline',
-      fallback:       genAI ? 'gemini-direct' : 'unavailable',
-      note:           'Direct Gemini fallback active',
-    });
-  }
-});
+      const data = await pyRes.json();
+      const elapsed = Date.now() - startTime;
 
+      telemetry('log', {
+        event: 'python_answer_success',
+        request_id: requestId,
+        elapsed_ms: elapsed,
+        service: 'python-rag',
+      });
+
+      return res.json({
+        success: true,
+        answer: data.answer,
+        sources: data.sources || [],
+        language: data.language || language || 'en',
+        response_time_ms: elapsed,
+        model: data.model,
+        service: 'python-rag',
+        request_id: requestId,
+      });
+    } catch (pyErr) {
+      pythonError = pyErr;
+      telemetry('warn', {
+        event: 'python_answer_failed',
+        request_id: requestId,
+        reason: pyErr.message,
+        retryable: isTransientError(pyErr),
+      });
+    }
+
+    try {
+      const fallback = await withRetry(async () => geminiDirectFallback(text), {
+        attempts: GEMINI_RETRY_ATTEMPTS,
+        baseDelayMs: RETRY_BASE_DELAY_MS,
+        shouldRetry: isTransientError,
+        onRetry: ({ attempt, waitMs, error }) => {
+          telemetry('warn', {
+            event: 'gemini_retry',
+            request_id: requestId,
+            next_attempt: attempt + 1,
+            wait_ms: waitMs,
+            reason: error.message,
+          });
+        },
+      });
+
+      const elapsed = Date.now() - startTime;
+      telemetry('log', {
+        event: 'gemini_fallback_success',
+        request_id: requestId,
+        elapsed_ms: elapsed,
+        model: fallback.model,
+      });
+
+      return res.json({
+        success: true,
+        answer: fallback.answer,
+        sources: fallback.sources || [],
+        language: language || 'auto',
+        response_time_ms: elapsed,
+        model: fallback.model,
+        service: 'gemini-direct-fallback',
+        note: 'Python RAG service offline — using built-in knowledge base',
+        request_id: requestId,
+      });
+    } catch (geminiErr) {
+      const elapsed = Date.now() - startTime;
+      const errorPayload = {
+        event: 'audit_query_total_failure',
+        request_id: requestId,
+        elapsed_ms: elapsed,
+        python_error: pythonError?.message || null,
+        gemini_error: geminiErr.message,
+      };
+
+      telemetry('error', errorPayload);
+      telemetry('error', {
+        event: 'alert_required',
+        request_id: requestId,
+        message: 'Both Python RAG and Gemini fallback failed for /api/audit/query',
+      });
+
+      await sendAlert({
+        ...errorPayload,
+        level: 'critical',
+        route: '/api/audit/query',
+        happened_at: new Date().toISOString(),
+      });
+
+      return res.status(503).json({
+        error: 'Huduma ya AI haipo sasa hivi. Tafadhali jaribu tena baadaye.',
+        errorEn: 'AI service temporarily unavailable. Please try again.',
+        code: 'AI_SERVICE_UNAVAILABLE',
+        request_id: requestId,
+      });
+    }
+  });
+
+  router.post('/ingest', async (req, res) => {
+    const token = req.headers['x-admin-token'] || req.headers.authorization?.replace('Bearer ', '');
+    const adminToken = process.env.ADMIN_TOKEN;
+
+    if (!adminToken || token !== adminToken) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const pyRes = await fetchImpl(`${aiUrl}/ingest`, {
+        method: 'POST',
+        headers: { ...req.headers, 'x-admin-token': token || '' },
+        body: req,
+        duplex: 'half',
+      });
+
+      const data = await pyRes.json();
+      return res.status(pyRes.status).json(data);
+    } catch (err) {
+      logger.error(`[AUDIT INGEST] Error: ${err.message}`);
+      return res.status(503).json({ error: 'Python ingestion service unreachable' });
+    }
+  });
+
+  router.get('/documents', async (req, res) => {
+    try {
+      const pyRes = await fetchImpl(`${aiUrl}/documents`, { signal: AbortSignal.timeout(5000) });
+      if (!pyRes.ok) throw new Error(`HTTP ${pyRes.status}`);
+      const data = await pyRes.json();
+      return res.json(data);
+    } catch {
+      return res.json({
+        count: 1,
+        documents: [{
+          document_name: 'OAG_BUILTIN_NANDI_KNOWLEDGE',
+          year: '2018–2024',
+          source: 'OAG Kenya (Built-in)',
+        }],
+        note: 'Python RAG service offline — showing built-in documents only',
+      });
+    }
+  });
+
+  router.get('/status', async (req, res) => {
+    try {
+      const pyRes = await fetchImpl(`${aiUrl}/health`, { signal: AbortSignal.timeout(4000) });
+      const data = await pyRes.json();
+      return res.json({ python_service: 'online', ...data, fallback: geminiApiKey ? 'gemini-direct-fallback' : 'unavailable' });
+    } catch {
+      return res.json({
+        python_service: 'offline',
+        fallback: geminiApiKey ? 'gemini-direct-fallback' : 'unavailable',
+        note: 'Direct Gemini fallback active',
+      });
+    }
+  });
+
+  return router;
+}
+
+export { validateAuditConfig };
+
+const router = createAuditRouter();
 export default router;

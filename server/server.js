@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import connectDB          from './db.js';
 import projectsRouter     from './routes/projects.js';
 import reportsRouter      from './routes/reports.js';
-import auditRouter        from './routes/audit.js';
+import auditRouter, { validateAuditConfig } from './routes/audit.js';
 import verificationsRouter from './routes/verifications.js';
 
 dotenv.config();
@@ -21,6 +21,14 @@ const __dirname  = path.dirname(__filename);
 const app        = express();
 const PORT       = process.env.PORT || 3001;
 const IS_PROD    = process.env.NODE_ENV === 'production';
+
+try {
+  const { warnings } = validateAuditConfig({ strict: IS_PROD });
+  warnings.forEach((warning) => console.warn(`[CONFIG] ${warning}`));
+} catch (err) {
+  console.error(`[CONFIG] ${err.message}`);
+  process.exit(1);
+}
 
 // ── Database ─────────────────────────────────────────────────
 connectDB();
