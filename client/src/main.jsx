@@ -11,3 +11,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>,
 );
+
+// ── Register Service Worker (enables PWA install on Chrome/Android) ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then(() => console.log('[SW] Macho ya Mwananchi service worker registered'))
+      .catch((err) => console.warn('[SW] Registration failed:', err));
+  });
+}
