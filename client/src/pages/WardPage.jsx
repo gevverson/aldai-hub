@@ -29,22 +29,56 @@ const WardPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-800 mb-4"></div>
-        <p className="text-forest-700 font-medium">Investigating ledger for {wardName}...</p>
+      <div className="min-h-[60vh] flex flex-col justify-center items-center" style={{ background: '#0A0A0A' }}>
+        <div
+          className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mb-4"
+          style={{ borderColor: '#D97706', borderTopColor: 'transparent' }}
+        />
+        <p style={{ color: '#6B7280', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
+          Loading {wardName} ledger...
+        </p>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-[60vh] flex flex-col justify-center items-center text-center px-4">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 text-alert-red mb-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <h2 className="text-2xl font-bold text-forest-900 mb-2">Ward Data Not Found</h2>
-        <p className="text-gray-600 mb-6">We could not load the ledger for {wardName}.</p>
-        <Link to="/" className="btn-primary">Return Home</Link>
+      <div
+        className="min-h-[80vh] flex flex-col justify-center items-center text-center px-4"
+        style={{ background: '#0A0A0A' }}
+      >
+        <div
+          className="rounded-2xl p-10 max-w-md w-full"
+          style={{ background: '#111827', border: '1px solid #1F2937' }}
+        >
+          <div className="text-5xl mb-4">📂</div>
+          <h2 className="font-display text-white mb-2" style={{ fontSize: '24px' }}>
+            Ward Data Not Found
+          </h2>
+          <p style={{ color: '#D97706', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', marginBottom: '8px' }}>
+            Data ya Wadi Haikupatikana
+          </p>
+          <p style={{ color: '#6B7280', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7, marginBottom: '24px' }}>
+            The {wardName} ward ledger is not yet in our database. Project data is being compiled
+            from official audit records. Check back soon.
+          </p>
+          <div className="flex flex-col gap-3">
+            <a
+              href="/report"
+              className="block w-full py-3 rounded-xl font-bold text-center transition-all"
+              style={{ background: '#DC2626', color: '#fff', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              🚨 Report an Issue in This Ward
+            </a>
+            <a
+              href="/"
+              className="block w-full py-3 rounded-xl font-bold text-center transition-all"
+              style={{ background: '#1F2937', color: '#F9FAFB', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              ← Back to All Wards
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
