@@ -136,15 +136,20 @@ const ReportsFeed = () => {
                 className="font-bold uppercase tracking-widest"
                 style={{ color: '#DC2626', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
               >
-                Inasasishwa Kila Dakika 30 · Refreshes Every 30s
+                Refreshes Every 30s · Inasasishwa Kila Sekunde 30
               </span>
             </div>
             <h2
               className="font-display text-white leading-tight"
               style={{ fontSize: 'clamp(22px, 4vw, 32px)' }}
             >
-              RIPOTI ZA WANANCHI
+              CITIZEN REPORTS
             </h2>
+            <p
+              style={{ color: '#D97706', fontSize: '11px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', marginTop: '2px' }}
+            >
+              Ripoti za Wananchi
+            </p>
             <p
               className="mt-1"
               style={{ color: '#6B7280', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
@@ -162,7 +167,7 @@ const ReportsFeed = () => {
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            + Ripoti Mpya
+            + New Report
           </Link>
         </div>
 
@@ -195,31 +200,31 @@ const ReportsFeed = () => {
 const CTA_ITEMS = [
   {
     icon: '📸',
-    title: 'RIPOTI',
-    titleEn: 'Report',
+    title: 'REPORT',
+    titleSw: 'Ripoti',
     swahili: 'Umegundua mradi ulioachwa? Ripoti bila kutoa jina lako.',
     english: 'Found an abandoned project? Report without revealing your identity.',
-    btnLabel: 'Ripoti Sasa →',
+    btnLabel: 'Report Now →',
     btnTo: '/report',
     accentColor: '#DC2626',
   },
   {
     icon: '📍',
-    title: 'THIBITISHA',
-    titleEn: 'Verify',
+    title: 'VERIFY',
+    titleSw: 'Thibitisha',
     swahili: 'Nenda eneo la mradi. Piga picha. Thibitisha ukweli.',
     english: 'Go to the project site. Take a photo. Verify the truth.',
-    btnLabel: 'Angalia Mapa →',
+    btnLabel: 'View Map →',
     btnTo: '/map',
     accentColor: '#D97706',
   },
   {
     icon: '🤖',
-    title: 'ULIZA AI',
-    titleEn: 'Ask AI',
+    title: 'ASK AI',
+    titleSw: 'Uliza AI',
     swahili: 'Uliza swali lolote kuhusu pesa za umma. AI itakujibu kwa lugha rahisi.',
     english: 'Ask any question about public money. AI will answer in plain language.',
-    btnLabel: 'Uliza Sasa →',
+    btnLabel: 'Ask Now →',
     btnTo: '/audit',
     accentColor: '#7C3AED',
   },
@@ -288,7 +293,7 @@ const CTASection = () => (
                 className="font-semibold uppercase tracking-widest mb-4"
                 style={{ color: item.accentColor, fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
               >
-                {item.titleEn}
+                {item.titleSw}
               </p>
 
               {/* Swahili copy */}

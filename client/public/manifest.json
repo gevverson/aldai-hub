@@ -1,11 +1,11 @@
 {
   "name": "Macho ya Mwananchi",
-  "short_name": "Macho",
-  "description": "Citizen's Eye — Aldai Constituency Accountability Platform. Exposing ghost projects and corruption using official audit data.",
+  "short_name": "Macho ya Mwananchi",
+  "description": "Citizen's Eye — Aldai Constituency Accountability Platform. Exposing ghost projects and corruption using official OAG audit data.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#14532d",
-  "theme_color": "#14532d",
+  "background_color": "#0A0A0A",
+  "theme_color": "#D97706",
   "orientation": "portrait-primary",
   "icons": [
     {

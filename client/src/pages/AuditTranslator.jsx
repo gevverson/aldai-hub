@@ -487,7 +487,7 @@ const AuditTranslator = () => {
 
   // State
   const [question, setQuestion]     = useState('');
-  const [language, setLanguage]     = useState('sw'); // default Swahili
+  const [language, setLanguage]     = useState('en'); // default English
   const [messages, setMessages]     = useState([]);
   const [loading, setLoading]       = useState(false);
   const [history, setHistory]       = useState(() => {
@@ -746,8 +746,8 @@ const AuditTranslator = () => {
           >
             <div className="flex items-center gap-1">
               {[
-                { code: 'sw', flag: '🇰🇪', label: 'Kiswahili' },
                 { code: 'en', flag: '🇬🇧', label: 'English' },
+                { code: 'sw', flag: '🇰🇪', label: 'Kiswahili' },
               ].map(({ code, flag, label }) => (
                 <button
                   key={code}

@@ -79,8 +79,9 @@ const ReportPage = () => {
             className="font-display text-white mb-2"
             style={{ fontSize: '28px' }}
           >
-            Ripoti Imetumwa
+            Report Submitted
           </h2>
+          <p style={{ color: '#D97706', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', marginBottom: '4px' }}>Ripoti Imetumwa</p>
           <p style={{ color: '#6B7280', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", marginBottom: '24px' }}>
             Evidence secured. Your report is anonymous — no personal data was stored.
           </p>
@@ -93,7 +94,7 @@ const ReportPage = () => {
               className="uppercase tracking-widest mb-3"
               style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
             >
-              Nambari ya Kufuatilia · Tracking Code
+              Tracking Code · Nambari ya Kufuatilia
             </p>
             <p
               className="font-mono font-black tracking-widest"
@@ -128,7 +129,7 @@ const ReportPage = () => {
               fontSize: '14px',
             }}
           >
-            Tuma Ripoti Nyingine · Submit Another Report
+            Submit Another Report (Tuma Ripoti Nyingine)
           </button>
         </div>
       </div>
@@ -146,14 +147,17 @@ const ReportPage = () => {
             className="font-bold uppercase tracking-widest mb-3"
             style={{ color: '#D97706', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
           >
-            Toa Ushahidi · Submit Evidence
+            Submit Evidence (Toa Ushahidi)
           </p>
           <h1
             className="font-display text-white mb-3"
             style={{ fontSize: 'clamp(28px, 6vw, 44px)', lineHeight: 1.1 }}
           >
-            RIPOTI UFISADI
+            REPORT CORRUPTION
           </h1>
+          <p style={{ color: '#D97706', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', marginBottom: '4px' }}>
+            Ripoti Ufisadi
+          </p>
           <p style={{ color: '#6B7280', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", maxWidth: '420px', margin: '0 auto' }}>
             100% anonymous. No login. No email. No IP address stored.
           </p>
@@ -297,10 +301,10 @@ const ReportPage = () => {
                       className="w-4 h-4 rounded-full border-2 animate-spin"
                       style={{ borderColor: '#fff', borderTopColor: 'transparent' }}
                     />
-                    Inasalimisha...
+                    Submitting...
                   </>
                 ) : (
-                  <>🇰🇪 Wasilisha Ripoti ya Siri</>
+                  <>🇰🇪 Submit Anonymous Report (Wasilisha Ripoti ya Siri)</>
                 )}
               </button>
 

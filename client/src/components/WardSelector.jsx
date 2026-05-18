@@ -55,9 +55,9 @@ const FALLBACK_WARDS = [
 
 /* ── Health config ──────────────────────────────────────── */
 const HEALTH = {
-  red:   { bar: '#DC2626', label: 'Hali Mbaya Sana', en: 'Critical Issues', icon: '🔴' },
-  amber: { bar: '#D97706', label: 'Wasiwasi wa Wastani', en: 'Moderate Concerns', icon: '🟡' },
-  green: { bar: '#16A34A', label: 'Inaendelea', en: 'Ongoing', icon: '🟢' },
+  red:   { bar: '#DC2626', label: 'Critical Issues', sw: 'Hali Mbaya Sana', icon: '🔴' },
+  amber: { bar: '#D97706', label: 'Moderate Concerns', sw: 'Wasiwasi wa Wastani', icon: '🟡' },
+  green: { bar: '#16A34A', label: 'Ongoing', sw: 'Inaendelea', icon: '🟢' },
 };
 
 const formatKsh = (n) => {
@@ -129,7 +129,7 @@ const WardCard = ({ ward }) => {
                 className="uppercase tracking-wider"
                 style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
               >
-                Bajeti (Budget)
+                Budget (Bajeti)
               </p>
             </div>
             <div
@@ -147,7 +147,7 @@ const WardCard = ({ ward }) => {
                 className="uppercase tracking-wider"
                 style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
               >
-                Miradi (Projects)
+                Projects (Miradi)
               </p>
             </div>
           </div>
@@ -159,7 +159,7 @@ const WardCard = ({ ward }) => {
                 className="font-semibold uppercase tracking-wide"
                 style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
               >
-                Ukamilishaji (Completion)
+                Completion (Ukamilishaji)
               </span>
               <span
                 className="font-mono-jet font-bold"
@@ -195,7 +195,7 @@ const WardCard = ({ ward }) => {
               <p
                 style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
               >
-                {health.en}
+                {health.sw}
               </p>
             </div>
             <span
@@ -251,8 +251,13 @@ const WardSelector = () => {
             className="font-display text-white leading-tight mb-3"
             style={{ fontSize: 'clamp(26px, 5vw, 40px)' }}
           >
-            CHAGUA WADI YAKO
+            SELECT YOUR WARD
           </h2>
+          <p
+            style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", maxWidth: '500px', margin: '0 auto', fontStyle: 'italic' }}
+          >
+            Chagua Wadi Yako
+          </p>
           <p
             style={{ color: '#6B7280', fontSize: '16px', fontFamily: "'DM Sans', sans-serif", maxWidth: '500px', margin: '0 auto' }}
           >

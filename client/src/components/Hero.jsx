@@ -130,8 +130,8 @@ const Hero = ({ globalStats }) => {
             className="font-display leading-none tracking-tight mb-3"
             style={{ fontSize: 'clamp(64px, 13vw, 130px)' }}
           >
-            <span style={{ color: '#D97706', display: 'block' }}>PESA YAKO.</span>
-            <span style={{ color: '#F9FAFB', display: 'block' }}>Wapi Ilikwenda?</span>
+            <span style={{ color: '#D97706', display: 'block' }}>YOUR MONEY.</span>
+            <span style={{ color: '#F9FAFB', display: 'block' }}>Where Did It Go?</span>
           </motion.h1>
 
           {/* Subtitle translation */}
@@ -146,7 +146,7 @@ const Hero = ({ globalStats }) => {
               fontStyle: 'italic',
             }}
           >
-            "Your Money. Where Did It Go?"
+            "Pesa Yako. Wapi Ilikwenda?" — Your Money. Where Did It Go?
           </motion.p>
 
           {/* ── Stat pills ── */}
@@ -172,7 +172,7 @@ const Hero = ({ globalStats }) => {
               className="btn-primary text-base group"
               style={{ minWidth: '220px' }}
             >
-              Angalia Wadi Yako
+              View Your Ward
               <span className="transition-transform group-hover:translate-x-1">→</span>
             </Link>
             <Link
@@ -180,7 +180,7 @@ const Hero = ({ globalStats }) => {
               className="btn-outline text-base"
               style={{ minWidth: '220px' }}
             >
-              🤖 Uliza AI Ukaguzi
+              🤖 Ask the AI Auditor
             </Link>
           </motion.div>
 
