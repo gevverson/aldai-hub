@@ -3,11 +3,11 @@ import { Link, NavLink } from 'react-router-dom';
 import AlertTicker from './AlertTicker';
 
 const NAV_LINKS = [
-  { to: '/',       label: 'Miradi',  en: 'Projects', exact: true },
-  { to: '/map',    label: 'Mapa',    en: 'Map' },
-  { to: '/report', label: 'Ripoti',  en: 'Report' },
-  { to: '/audit',  label: 'Ukaguzi', en: 'Audit AI' },
-  { to: '/about',  label: 'Kuhusu',  en: 'About' },
+  { to: '/',       label: 'Projects', sw: 'Miradi',  exact: true },
+  { to: '/map',    label: 'Map',      sw: 'Mapa' },
+  { to: '/report', label: 'Report',   sw: 'Ripoti' },
+  { to: '/audit',  label: 'Audit AI', sw: 'Ukaguzi' },
+  { to: '/about',  label: 'About',    sw: 'Kuhusu' },
 ];
 
 const Navbar = () => {
@@ -132,7 +132,7 @@ const Navbar = () => {
                         style={{ fontSize: '9px', marginTop: '1px', opacity: 0.6 }}
                         className={isActive ? 'text-amber-300' : 'text-gray-500'}
                       >
-                        {en}
+                        {sw}
                       </span>
                     </>
                   )}
@@ -183,7 +183,7 @@ const Navbar = () => {
                   boxShadow: '0 4px 14px rgba(217,119,6,0.3)',
                 }}
               >
-                Ripoti →
+                Report →
               </Link>
             </div>
 
@@ -233,7 +233,7 @@ const Navbar = () => {
                     >
                       {label}
                     </span>
-                    <span className="text-gray-500 text-sm">{en} →</span>
+                    <span className="text-gray-500 text-sm">{sw} →</span>
                   </>
                 )}
               </NavLink>
@@ -249,7 +249,7 @@ const Navbar = () => {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                 </span>
                 <span className="text-red-300 text-sm font-bold">
-                  {todayReports} ripoti leo (reports today)
+                  {todayReports} reports today (ripoti leo)
                 </span>
               </div>
             )}
@@ -264,7 +264,7 @@ const Navbar = () => {
                 boxShadow: '0 8px 24px rgba(217,119,6,0.3)',
               }}
             >
-              🚨 Ripoti Ufisadi (Report Corruption)
+              🚨 Report Corruption (Ripoti Ufisadi)
             </Link>
           </div>
         </div>
