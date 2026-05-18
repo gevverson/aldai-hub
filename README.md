@@ -10,7 +10,7 @@ A civic accountability platform exposing ghost projects, stalled infrastructure,
 
 - **Project Ledger** — 14 OAG-documented projects mapped across 6 wards with GPS coordinates, official vs. community status, and direct audit citations
 - **GPS Citizen Verification** — Citizens submit photo evidence + live GPS coordinates; a consensus engine automatically updates project status when enough verifications agree
-- **AI Audit Translator** — Ask questions in Swahili or English; answers come from real OAG reports via a RAG pipeline (ChromaDB + Claude), with a direct-Claude fallback
+- **AI Audit Translator** — Ask questions in Swahili or English; answers come from real OAG reports via a RAG pipeline (ChromaDB + Gemini), with a direct-Gemini fallback
 - **Anonymous Report Submission** — Submit corruption reports; receive a tracking code; zero personal data collected
 - **Evidence Map** — Leaflet map with colour-coded project markers and citizen verification pins
 
@@ -21,10 +21,10 @@ A civic accountability platform exposing ghost projects, stalled infrastructure,
 ```
 client/          React 18 + Vite + Tailwind CSS + Leaflet
 server/          Node.js + Express 4 + Mongoose + MongoDB
-ai-service/      FastAPI + ChromaDB + Anthropic Claude SDK
+ai-service/      FastAPI + ChromaDB + Google Gemini SDK
 ```
 
-The Node server proxies all AI requests to the Python service and falls back to direct Claude API if the service is unreachable — citizens always get an answer.
+The Node server proxies all AI requests to the Python service and falls back to direct Gemini API if the service is unreachable — citizens always get an answer.
 
 ---
 
