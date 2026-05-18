@@ -139,6 +139,34 @@ const VerificationMap = () => {
             </div>
           </div>
         )}
+
+        {/* Empty state — shown when DB has no seeded projects yet */}
+        {!loading && projects.length === 0 && (
+          <div className="absolute inset-0 z-[400] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+            <div
+              className="rounded-2xl p-8 text-center max-w-sm mx-4"
+              style={{ background: '#111827', border: '1px solid #1F2937', boxShadow: '0 25px 50px rgba(0,0,0,0.6)' }}
+            >
+              <div className="text-5xl mb-4">🗺️</div>
+              <h3 className="font-display text-white mb-2" style={{ fontSize: '20px' }}>Map Loading Soon</h3>
+              <p className="mb-1" style={{ color: '#D97706', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic' }}>Ramani Inaandaliwa</p>
+              <p className="mb-5" style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+                Project markers will appear here once the Aldai constituency audit database is seeded.
+                The map is ready — data is being loaded.
+              </p>
+              <a
+                href="/report"
+                className="inline-block font-bold py-2.5 px-6 rounded-xl transition-all"
+                style={{ background: '#DC2626', color: '#fff', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                🚨 Report an Issue Now
+              </a>
+              <p className="mt-3" style={{ color: '#374151', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}>
+                Your reports will appear on this map immediately.
+              </p>
+            </div>
+          </div>
+        )}
         <MapContainer
           center={[0.18, 35.25]}
           zoom={11}

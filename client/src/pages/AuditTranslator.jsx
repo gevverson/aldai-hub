@@ -608,12 +608,12 @@ const AuditTranslator = () => {
                 className="font-display text-white leading-none"
                 style={{ fontSize: 'clamp(20px, 4vw, 28px)' }}
               >
-                MFUMO WA UKAGUZI WA AI
+                AI AUDIT TRANSLATOR
               </h1>
               <p
-                style={{ color: '#6B7280', fontSize: '11px', fontFamily: "'DM Sans', sans-serif", marginTop: '2px' }}
+                style={{ color: '#D97706', fontSize: '11px', fontFamily: "'DM Sans', sans-serif", marginTop: '2px', fontStyle: 'italic' }}
               >
-                AI Audit Translator
+                Mfumo wa Ukaguzi wa AI
               </p>
             </div>
           </div>
@@ -621,13 +621,13 @@ const AuditTranslator = () => {
             className="mb-1"
             style={{ color: '#9CA3AF', fontSize: '15px', fontFamily: "'DM Sans', sans-serif" }}
           >
-            Uliza swali lolote kuhusu pesa za umma za Nandi County.
+            Ask any question about Nandi County public funds — in English or Swahili.
+            AI will answer from official Auditor-General documents.
           </p>
           <p
             style={{ color: '#4B5563', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}
           >
-            Ask any question about Nandi County public funds — in Swahili or English.
-            AI will answer from official Auditor-General documents.
+            Uliza swali lolote kuhusu pesa za umma za Nandi County.
           </p>
         </div>
 
@@ -665,7 +665,7 @@ const AuditTranslator = () => {
                   }}
                 >
                   <p style={{ color: '#D1D5DB', fontSize: '13px' }}>
-                    "{language === 'sw' ? q.sw : q.en}"
+                    &ldquo;{language === 'sw' ? q.sw : q.en}&rdquo;
                   </p>
                   {q.ward && (
                     <p
