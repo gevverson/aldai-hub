@@ -111,7 +111,7 @@ const Navbar = () => {
 
             {/* ── Desktop Nav Links ── */}
             <div className="hidden md:flex items-center gap-1">
-              {NAV_LINKS.map(({ to, label, en, exact }) => (
+              {NAV_LINKS.map(({ to, label, sw, exact }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -212,7 +212,7 @@ const Navbar = () => {
           style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(16px)', top: `${navHeight}px` }}
         >
           <div className="flex flex-col flex-1 px-6 py-8 gap-2">
-            {NAV_LINKS.map(({ to, label, en, exact }) => (
+            {NAV_LINKS.map(({ to, label, sw, exact }) => (
               <NavLink
                 key={to}
                 to={to}
