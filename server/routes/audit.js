@@ -146,6 +146,13 @@ function buildGeminiFallback(geminiApiKey, { geminiFallbackFn } = {}) {
     genAI = new GoogleGenerativeAI(geminiApiKey);
   }
 
+  // Try each model in order — if one is rate-limited, fall through to the next
+  const MODEL_CASCADE = [
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-8b',
+  ];
+
   return async function geminiDirectFallback(question) {
     if (!genAI) {
       return {
@@ -155,18 +162,30 @@ function buildGeminiFallback(geminiApiKey, { geminiFallbackFn } = {}) {
       };
     }
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: FALLBACK_SYSTEM,
-    });
-
-    const result = await model.generateContent(question);
-    return {
-      answer: result.response.text(),
-      fallback: true,
-      model: 'gemini-2.0-flash-direct',
-      sources: [],
-    };
+    let lastErr;
+    for (const modelName of MODEL_CASCADE) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: FALLBACK_SYSTEM,
+        });
+        const result = await model.generateContent(question);
+        return {
+          answer: result.response.text(),
+          fallback: true,
+          model: `${modelName}-direct`,
+          sources: [],
+        };
+      } catch (err) {
+        // 429 rate-limit → try next model; anything else → rethrow immediately
+        const is429 = err?.status === 429 || err?.message?.includes('429') ||
+                      err?.message?.toLowerCase().includes('quota') ||
+                      err?.message?.toLowerCase().includes('exhausted');
+        if (!is429) throw err;
+        lastErr = err;
+      }
+    }
+    throw lastErr;
   };
 }
 
