@@ -32,3 +32,12 @@ dist-ssr
 
 # Mac
 .DS_Store
+
+# Playwright
+/playwright-report/
+/test-results/
+echo "Done"
+
+# Playwright
+/playwright-report/
+/test-results/

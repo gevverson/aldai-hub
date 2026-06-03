@@ -1,0 +1,11 @@
+{
+  "name": "macho-ya-mwananchi-e2e",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright test --reporter=html"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}
