@@ -146,11 +146,13 @@ function buildGeminiFallback(geminiApiKey, { geminiFallbackFn } = {}) {
     genAI = new GoogleGenerativeAI(geminiApiKey);
   }
 
-  // Try each model in order — if one is rate-limited, fall through to the next
+  // Try each model in order — if one is rate-limited, fall through to the next.
+  // Models have separate per-day quotas so exhausting one doesn't kill the others.
   const MODEL_CASCADE = [
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
     'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
+    'gemini-2.0-flash-lite',
   ];
 
   return async function geminiDirectFallback(question) {
