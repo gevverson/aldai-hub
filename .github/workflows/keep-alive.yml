@@ -1,0 +1,25 @@
+name: Keep Render services alive
+
+on:
+  schedule:
+    # Every 10 minutes — Render free tier sleeps after 15 min of inactivity
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}   # allow manual trigger from GitHub UI
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping server health
+        run: |
+          curl -sf --max-time 30 \
+            https://macho-ya-mwananchi-server.onrender.com/api/health \
+            && echo "Server awake" \
+            || echo "Server ping failed (may be cold starting)"
+
+      - name: Ping AI service health
+        run: |
+          curl -sf --max-time 30 \
+            https://macho-ya-mwananchi-ai.onrender.com/health \
+            && echo "AI service awake" \
+            || echo "AI ping failed (may be cold starting)"
