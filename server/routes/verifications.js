@@ -1,7 +1,7 @@
 import express  from 'express';
 import multer   from 'multer';
 import path     from 'path';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { body, validationResult } from 'express-validator';
 import sharp        from 'sharp';
@@ -12,6 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 const router     = express.Router();
 
+const UPLOADS_DIR = path.join(__dirname, '../uploads');
+await mkdir(UPLOADS_DIR, { recursive: true });
+
 // ── Codenames — anonymous identity for verifiers ──────────────
 const CODENAMES = [
   'Simba', 'Tembo', 'Twiga', 'Chui', 'Kifaru', 'Nyati', 'Mbogo', 'Tai',
@@ -21,11 +24,21 @@ const CODENAMES = [
 const codename = () => CODENAMES[Math.floor(Math.random() * CODENAMES.length)];
 
 // ── Multer — disk storage, images only ───────────────────────
+const MIME_TO_EXT = {
+  'image/jpeg': '.jpg',
+  'image/png':  '.png',
+  'image/webp': '.webp',
+  'image/gif':  '.gif',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
+};
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
+  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename:    (req, file, cb) => {
     const suffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `verify-${suffix}${path.extname(file.originalname)}`);
+    const ext = MIME_TO_EXT[file.mimetype] || '.jpg';
+    cb(null, `verify-${suffix}${ext}`);
   },
 });
 
