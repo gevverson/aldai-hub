@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Report from '../models/Report.js';
@@ -79,13 +80,13 @@ router.post('/', submitRules, async (req, res, next) => {
 
     const trackingCode =
       'NANDI-' + new Date().getFullYear() + '-' +
-      Math.random().toString(36).substring(2, 6).toUpperCase();
+      crypto.randomBytes(4).toString('hex').toUpperCase();
 
     const report = new Report({
       ward:         ward.trim(),
       issueType:    category || 'other',
       description:  description.trim(),
-      reportId:     'RPT-' + Date.now(),
+      reportId:     crypto.randomUUID(),
       trackingCode,
       status:       'RECEIVED',
     });

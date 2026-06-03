@@ -471,5 +471,17 @@ export function createAuditRouter({
 
 export { validateAuditConfig };
 
-const router = createAuditRouter();
-export default router;
+// IMPORTANT: Do NOT call createAuditRouter() here at module load time.
+// ES module imports are hoisted and execute BEFORE dotenv.config() runs in server.js,
+// so process.env.GEMINI_API_KEY would always be undefined at instantiation.
+// Instead we create the router lazily on the first request so all env vars are loaded.
+let _router;
+function getLazyRouter() {
+  if (!_router) _router = createAuditRouter();
+  return _router;
+}
+
+const lazyRouter = express.Router();
+lazyRouter.use((req, res, next) => getLazyRouter()(req, res, next));
+
+export default lazyRouter;
