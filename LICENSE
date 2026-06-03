@@ -1,21 +1,63 @@
-MIT License
+GNU GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
 
-Copyright (c) 2026 Kipkoech Gevverson
+Copyright (C) 2026 Gevverson Kipkoech
+Original Creator: Gevverson Kipkoech <gevversonkipkoech@gmail.com>
+GitHub: https://github.com/gevverson
+Project: Macho ya Mwananchi — Citizen's Eye (Aldai Hub)
+Live: https://macho-ya-mwananchi-client.onrender.com
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+─────────────────────────────────────────────────────────────────────
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+KEY TERMS OF GPL-3.0:
+
+1. FREEDOM TO USE — Anyone can run this software for any purpose.
+
+2. FREEDOM TO STUDY & MODIFY — Anyone can read and change the source
+   code — but modified versions must also be released under GPL-3.0.
+
+3. FREEDOM TO DISTRIBUTE — Anyone can share copies, but must include
+   the source code and this license.
+
+4. COPYLEFT — If you build on this code and distribute your version,
+   your version must also be open source under GPL-3.0. You cannot
+   take this code, make it proprietary, and sell it closed-source.
+
+─────────────────────────────────────────────────────────────────────
+
+ATTRIBUTION REQUIREMENT (Additional Permission under GPL Section 7):
+
+Any person or organization that deploys, distributes, or builds upon
+this software MUST:
+
+  (a) Retain this copyright notice in all copies or substantial
+      portions of the software.
+
+  (b) Credit the original creator visibly in any public-facing
+      deployment — website footer, About page, or documentation:
+
+        "Originally created by Gevverson Kipkoech"
+        "github.com/gevverson | github.com/gevverson/aldai-hub"
+
+  (c) Not misrepresent the origin of this work or claim original
+      authorship of the core platform.
+
+─────────────────────────────────────────────────────────────────────
+
+FULL LICENSE TEXT:
+
+The full GNU General Public License v3.0 text is available at:
+https://www.gnu.org/licenses/gpl-3.0.txt
+
+─────────────────────────────────────────────────────────────────────
+
+"Ukweli ni nguvu." — The truth is power.
