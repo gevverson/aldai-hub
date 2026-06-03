@@ -38,62 +38,76 @@ const ProjectCard = ({ project }) => {
 
   return (
     <>
-      <div className="card p-5 mb-4 border-l-4 border-l-forest-800 hover:border-l-amber-500 transition-colors">
-        <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-4 border-b border-gray-100 pb-4">
-          <div className="flex-1">
-            <div className="flex flex-wrap items-start gap-2 mb-1">
-              <h3 className="text-xl font-bold text-forest-900">{project.name}</h3>
-              {verificationCount > 0 && (
-                <span className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                  📸 {verificationCount} citizen {verificationCount === 1 ? 'verification' : 'verifications'}
-                </span>
-              )}
+      <div
+        className="rounded-2xl mb-4 overflow-hidden transition-all duration-300 border border-[#1F2937] hover:border-amber-500/50 hover:-translate-y-[2px] hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+        style={{ background: '#111827' }}
+      >
+        {/* Top accent strip */}
+        <div className="h-1 w-full" style={{ background: project.communityStatus === 'GHOST PROJECT' ? '#DC2626' : project.communityStatus === 'STALLED' || project.communityStatus === 'ABANDONED' ? '#D97706' : project.communityStatus === 'DISPUTED' ? '#F59E0B' : '#1B4332' }} />
+
+        <div className="p-5">
+          <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-4 pb-4" style={{ borderBottom: '1px solid #1F2937' }}>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-start gap-2 mb-1">
+                <h3 className="text-xl font-bold text-white">{project.name}</h3>
+                {verificationCount > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(14,165,233,0.12)', color: '#7DD3FC', border: '1px solid rgba(14,165,233,0.25)' }}
+                  >
+                    📸 {verificationCount} citizen {verificationCount === 1 ? 'verification' : 'verifications'}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-medium" style={{ color: '#6B7280' }}>
+                <span style={{ color: '#D97706' }}>{project.ward}</span> · {project.fund} Fund · {project.year}
+              </p>
             </div>
-            <p className="text-sm text-gray-500 font-medium">
-              <span className="text-forest-700">{project.ward}</span> · {project.fund} Fund · {project.year}
+            <div className="text-left md:text-right shrink-0">
+              <p className="text-lg font-bold font-mono-jet" style={{ color: '#D97706' }}>{formatKsh(project.allocated)}</p>
+              <p className="text-xs uppercase tracking-widest font-semibold mt-1" style={{ color: '#4B5563' }}>Allocated</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3 mb-4">
+            <div className="p-3 rounded-xl" style={{ background: '#0A0A0A', border: '1px solid #1F2937' }}>
+              <p className="text-xs uppercase font-semibold mb-1" style={{ color: '#4B5563' }}>Official Claim</p>
+              <p className="font-medium text-white text-sm">{project.officialStatus}</p>
+            </div>
+            <div className="p-3 rounded-xl" style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)' }}>
+              <p className="text-xs uppercase font-semibold mb-1" style={{ color: '#92400E' }}>Community Reality</p>
+              {getStatusBadge(project.communityStatus)}
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.15)' }}>
+            <div className="flex items-start gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#DC2626' }}>
+                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wider mb-1" style={{ color: '#F87171' }}>Audit Finding</p>
+                <p className="text-sm leading-relaxed" style={{ color: '#D1D5DB' }}>{project.auditNote}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid #1F2937' }}>
+            <p className="text-xs" style={{ color: '#4B5563' }}>
+              {verificationCount > 0
+                ? `📸 ${verificationCount} citizen${verificationCount > 1 ? 's have' : ' has'} verified this site`
+                : '📸 No citizen verifications yet — be first'}
             </p>
+            <button
+              onClick={() => setShowVerify(true)}
+              className="text-xs font-black px-4 py-2 rounded-lg transition-all flex items-center gap-1.5"
+              style={{ background: '#1B4332', color: '#fff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#D97706'; e.currentTarget.style.color = '#0A0A0A'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#1B4332'; e.currentTarget.style.color = '#fff'; }}
+            >
+              <span>📍</span> Verify This Site
+            </button>
           </div>
-          <div className="text-left md:text-right shrink-0">
-            <p className="text-lg font-bold text-forest-900">{formatKsh(project.allocated)}</p>
-            <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mt-1">Allocated</p>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4 mb-4">
-          <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Official Claim</p>
-            <p className="font-medium text-gray-800">{project.officialStatus}</p>
-          </div>
-          <div className="bg-amber-50/50 p-3 rounded-md border border-amber-100">
-            <p className="text-xs text-amber-800/60 uppercase font-semibold mb-1">Community Reality</p>
-            {getStatusBadge(project.communityStatus)}
-          </div>
-        </div>
-
-        <div className="bg-red-50 p-4 rounded-md border border-red-100">
-          <div className="flex items-start gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-alert-red flex-shrink-0 mt-0.5">
-              <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-            </svg>
-            <div>
-              <p className="text-sm font-semibold text-alert-red uppercase tracking-wider mb-1">Audit Finding</p>
-              <p className="text-gray-800 text-sm leading-relaxed">{project.auditNote}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-xs text-gray-400">
-            {verificationCount > 0
-              ? `📸 ${verificationCount} citizen${verificationCount > 1 ? 's have' : ' has'} verified this site`
-              : '📸 No citizen verifications yet — be first'}
-          </p>
-          <button
-            onClick={() => setShowVerify(true)}
-            className="bg-forest-900 hover:bg-amber-500 text-white text-xs font-black px-4 py-2 rounded-lg transition-all flex items-center gap-1.5"
-          >
-            <span>📍</span> Verify This Site
-          </button>
         </div>
       </div>
 
