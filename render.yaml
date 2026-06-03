@@ -18,10 +18,10 @@ services:
       # Forward API calls to the Node server so React can reach it
       - type: rewrite
         source: /api/*
-        destination: https://macho-ya-mwananchi-server.onrender.com/api/$1
+        destination: https://macho-ya-mwananchi-server.onrender.com/api/*
       - type: rewrite
         source: /uploads/*
-        destination: https://macho-ya-mwananchi-server.onrender.com/uploads/$1
+        destination: https://macho-ya-mwananchi-server.onrender.com/uploads/*
       # React Router: every URL that isn't a file serves index.html
       - type: rewrite
         source: /*
