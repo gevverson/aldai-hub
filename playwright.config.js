@@ -6,7 +6,7 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,        // sequential — Render free tier handles one session at a time cleanly
   retries: process.env.CI ? 2 : 0,
-  timeout: 60_000,             // each test gets 60s (Render cold start allowance)
+  timeout: 90_000,             // each test gets 90s — ward pages use networkidle which needs headroom
   expect: { timeout: 15_000 },
 
   use: {

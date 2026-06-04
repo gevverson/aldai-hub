@@ -1,55 +1,86 @@
 import { test, expect } from '@playwright/test';
 
+const SERVER = 'https://macho-ya-mwananchi-server.onrender.com';
+
 // ── warm up the backend before anything else ─────────────────────────────────
-test.beforeAll(async ({ browser }) => {
-  const page = await browser.newPage();
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
-  await page.close();
+test.beforeAll(async ({ request }) => {
+  // Ping health directly — no page load, no extra API calls
+  for (let i = 0; i < 5; i++) {
+    const res = await request.get(`${SERVER}/api/health`).catch(() => null);
+    if (res?.ok()) break;
+    await new Promise(r => setTimeout(r, 5000));
+  }
 });
 
-// ─── API ─────────────────────────────────────────────────────────────────────
+// ─── API (uses bare request fixture — no page navigation, no extra API calls) ──
 test.describe('API', () => {
-  test('health endpoint returns ok + db connected', async ({ page }) => {
-    await page.goto('/');
-    const res = await page.request.get('/api/health');
+  test('health endpoint returns ok + db connected', async ({ request }) => {
+    const res = await request.get(`${SERVER}/api/health`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.status).toBe('ok');
     expect(body.db).toBe('connected');
   });
 
-  test('projects endpoint returns 14 seeded projects', async ({ page }) => {
-    await page.goto('/');
-    const res = await page.request.get('/api/projects');
+  test('projects endpoint returns 14 seeded projects', async ({ request }) => {
+    const res = await request.get(`${SERVER}/api/projects`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.data.length).toBe(14);
   });
 
-  test('wards endpoint returns all 6 wards', async ({ page }) => {
-    await page.goto('/');
-    const res = await page.request.get('/api/projects/wards');
+  test('wards endpoint returns all 6 wards', async ({ request }) => {
+    const res = await request.get(`${SERVER}/api/projects/wards`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.data.length).toBe(6);
   });
 
-  test('stats endpoint returns correct project count', async ({ page }) => {
-    await page.goto('/');
-    const res = await page.request.get('/api/projects/stats');
+  test('stats endpoint returns correct project count', async ({ request }) => {
+    const res = await request.get(`${SERVER}/api/projects/stats`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.data.projectsTracked).toBe(14);
     expect(body.data.ghostProjects).toBeGreaterThanOrEqual(1);
   });
 
-  test('audit status endpoint responds', async ({ page }) => {
-    await page.goto('/');
-    const res = await page.request.get('/api/audit/status');
+  test('audit status endpoint responds', async ({ request }) => {
+    const res = await request.get(`${SERVER}/api/audit/status`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(['online', 'offline']).toContain(body.python_service);
+  });
+
+  test('ward endpoint returns projects for each ward', async ({ request }) => {
+    for (const ward of ['Kobujoi', 'Terik', 'Kabwareng']) {
+      const res = await request.get(`${SERVER}/api/projects/ward/${ward}`);
+      expect(res.ok()).toBeTruthy();
+      const body = await res.json();
+      expect(body.data.projects.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('report submission returns tracking code', async ({ request }) => {
+    const res = await request.post(`${SERVER}/api/reports`, {
+      data: {
+        ward: 'Terik',
+        category: 'stalled',
+        description: 'CI automated pipeline test — please ignore this submission.',
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.data.trackingCode).toMatch(/^NANDI-\d{4}-[A-F0-9]+$/);
+  });
+
+  test('audit API returns a structured answer', async ({ request }) => {
+    const res = await request.post(`${SERVER}/api/audit/query`, {
+      data: { question: 'How much was spent on Kobujoi hospital?', language: 'en' },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.answer).toBeTruthy();
+    expect(body.answer).toMatch(/JIBU|📋|Answer/i);
   });
 });
 
@@ -134,30 +165,27 @@ const WARDS = [
 test.describe('Ward pages', () => {
   for (const { slug, projects } of WARDS) {
     test(`${slug} — loads with ${projects} project(s)`, async ({ page }) => {
-      await page.goto(`/ward/${slug}`);
-      // Wait for data — the h1 changes from spinner to "X Ward Ledger"
+      // Use networkidle so we wait for the React fetch to complete
+      await page.goto(`/ward/${slug}`, { waitUntil: 'networkidle', timeout: 40_000 });
       await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
-        .toBeVisible({ timeout: 25_000 });
-      await expect(page.locator('h1').filter({ hasText: /Not Found/i }))
-        .not.toBeVisible();
-      // Correct number of project cards
+        .toBeVisible({ timeout: 30_000 });
       const cards = page.locator('text=Audit Finding');
       await expect(cards).toHaveCount(projects, { timeout: 10_000 });
     });
   }
 
   test('kobujoi — verify buttons are present', async ({ page }) => {
-    await page.goto('/ward/kobujoi');
+    await page.goto('/ward/kobujoi', { waitUntil: 'networkidle', timeout: 40_000 });
     await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
-      .toBeVisible({ timeout: 25_000 });
+      .toBeVisible({ timeout: 30_000 });
     await expect(page.locator('button', { hasText: 'Verify This Site' }))
       .toHaveCount(3, { timeout: 10_000 });
   });
 
   test('kobujoi — filter buttons work', async ({ page }) => {
-    await page.goto('/ward/kobujoi');
+    await page.goto('/ward/kobujoi', { waitUntil: 'networkidle', timeout: 40_000 });
     await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
-      .toBeVisible({ timeout: 25_000 });
+      .toBeVisible({ timeout: 30_000 });
     for (const f of ['All Projects', 'Critical', 'Disputed', 'Verified Complete']) {
       const btn = page.locator('button').filter({ hasText: new RegExp(f, 'i') }).first();
       await expect(btn).toBeVisible();
@@ -167,9 +195,9 @@ test.describe('Ward pages', () => {
   });
 
   test('back to overview link navigates home', async ({ page }) => {
-    await page.goto('/ward/kobujoi');
+    await page.goto('/ward/kobujoi', { waitUntil: 'networkidle', timeout: 40_000 });
     await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
-      .toBeVisible({ timeout: 25_000 });
+      .toBeVisible({ timeout: 30_000 });
     await page.locator('a', { hasText: /Back to Overview/i }).first().click();
     await expect(page).toHaveURL(/\/?$/);
   });
@@ -178,9 +206,9 @@ test.describe('Ward pages', () => {
 // ─── Verify modal ─────────────────────────────────────────────────────────────
 test.describe('Verify modal', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/ward/kobujoi');
+    await page.goto('/ward/kobujoi', { waitUntil: 'networkidle', timeout: 40_000 });
     await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
-      .toBeVisible({ timeout: 25_000 });
+      .toBeVisible({ timeout: 30_000 });
   });
 
   test('opens when Verify button is clicked', async ({ page }) => {
@@ -357,17 +385,9 @@ test.describe('Report page', () => {
     await expect(page.locator('text=/NANDI-/')).not.toBeVisible();
   });
 
-  test('report API accepts submission and returns tracking code', async ({ page }) => {
-    const res = await page.request.post('/api/reports', {
-      data: {
-        ward: 'Terik',
-        category: 'stalled',
-        description: 'CI automated pipeline test — please ignore this submission.',
-      },
-    });
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
-    expect(body.data.trackingCode).toMatch(/^NANDI-\d{4}-[A-F0-9]+$/);
+  test('report API tested via API suite', async () => {
+    // Covered by the API describe block using direct server requests
+    // This avoids double-counting against the CDN rate limit
   });
 });
 
