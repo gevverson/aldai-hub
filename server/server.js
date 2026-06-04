@@ -22,6 +22,11 @@ const app        = express();
 const PORT       = process.env.PORT || 3001;
 const IS_PROD    = process.env.NODE_ENV === 'production';
 
+// ── Trust Render/Cloudflare proxy so rate-limiter sees real user IPs ──────────
+// Without this, every browser request through the CDN looks like it comes from
+// the same CDN IP — all users share one rate-limit bucket and hit it instantly.
+app.set('trust proxy', 1);
+
 try {
   const { warnings } = validateAuditConfig({ strict: IS_PROD });
   warnings.forEach((warning) => console.warn(`[CONFIG] ${warning}`));
