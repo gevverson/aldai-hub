@@ -32,11 +32,11 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
 
-      # ── 4. Wake up Render (free tier may be sleeping) ─────────────
+      # ── 4. Wake up Render + wait for rate limit window to clear ──────
       - name: Wake up Render services
         run: |
           echo "Pinging server..."
-          for i in 1 2 3 4 5; do
+          for i in 1 2 3 4 5 6 7 8; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
               https://macho-ya-mwananchi-server.onrender.com/api/health \
               --max-time 30)
@@ -47,6 +47,10 @@ jobs:
             fi
             sleep 20
           done
+
+      # Wait 20s after wake-up so the server is fully ready before tests hammer it
+      - name: Allow server to stabilise
+        run: sleep 20
 
       # ── 5. Run E2E tests ──────────────────────────────────────────
       - name: Run Playwright tests
