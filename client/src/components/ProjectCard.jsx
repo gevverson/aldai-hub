@@ -28,6 +28,8 @@ const ProjectCard = ({ project }) => {
         return <span className="badge bg-gray-800 text-white border border-gray-900">💀 ABANDONED</span>;
       case 'MISALLOCATED':
         return <span className="badge bg-orange-500/10 text-orange-600 border border-orange-500/20">⛔ MISALLOCATED</span>;
+      case 'IRREGULAR':
+        return <span className="badge bg-red-500/10 text-red-400 border border-red-500/20">🚩 IRREGULAR</span>;
       default:
         return <span className="badge bg-gray-100 text-gray-800 border border-gray-200">{status}</span>;
     }
@@ -43,7 +45,7 @@ const ProjectCard = ({ project }) => {
         style={{ background: '#111827' }}
       >
         {/* Top accent strip */}
-        <div className="h-1 w-full" style={{ background: project.communityStatus === 'GHOST PROJECT' ? '#DC2626' : project.communityStatus === 'STALLED' || project.communityStatus === 'ABANDONED' ? '#D97706' : project.communityStatus === 'DISPUTED' ? '#F59E0B' : '#1B4332' }} />
+        <div className="h-1 w-full" style={{ background: project.communityStatus === 'GHOST PROJECT' || project.communityStatus === 'IRREGULAR' ? '#DC2626' : project.communityStatus === 'STALLED' || project.communityStatus === 'ABANDONED' ? '#D97706' : project.communityStatus === 'DISPUTED' ? '#F59E0B' : '#1B4332' }} />
 
         <div className="p-5">
           <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-4 pb-4" style={{ borderBottom: '1px solid #1F2937' }}>
