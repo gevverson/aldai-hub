@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.15" cy="0.1" r="0.9">
+      <stop offset="0" stop-color="#D97706" stop-opacity="0.18"/>
+      <stop offset="0.5" stop-color="#D97706" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#D97706" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0D1117"/>
+      <stop offset="1" stop-color="#0A0A0A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Kenya flag accent bar down the left edge -->
+  <rect x="0" y="0" width="14" height="630" fill="#0A0A0A"/>
+  <rect x="0" y="0" width="14" height="157" fill="#111827"/>
+  <rect x="0" y="157" width="14" height="8" fill="#FFFFFF"/>
+  <rect x="0" y="165" width="14" height="150" fill="#BB0000"/>
+  <rect x="0" y="315" width="14" height="8" fill="#FFFFFF"/>
+  <rect x="0" y="323" width="14" height="150" fill="#006600"/>
+  <rect x="0" y="473" width="14" height="8" fill="#FFFFFF"/>
+
+  <!-- Logo badge with eye -->
+  <g transform="translate(80,86)">
+    <rect width="112" height="112" rx="26" fill="url(#amber)"/>
+    <ellipse cx="56" cy="56" rx="42" ry="27" fill="#0A0A0A"/>
+    <ellipse cx="56" cy="56" rx="40" ry="25" fill="none" stroke="#FDE68A" stroke-width="3"/>
+    <circle cx="56" cy="56" r="16" fill="#FDE68A"/>
+    <circle cx="56" cy="56" r="8" fill="#0A0A0A"/>
+    <circle cx="61" cy="51" r="3" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="220" y="140" font-family="DejaVu Sans, Arial, sans-serif" font-size="60" font-weight="bold" fill="#FFFFFF" letter-spacing="1">MACHO YA MWANANCHI</text>
+  <text x="222" y="182" font-family="DejaVu Sans, Arial, sans-serif" font-size="23" font-weight="bold" fill="#D97706" letter-spacing="4">CITIZEN’S EYE · ALDAI CONSTITUENCY, NANDI COUNTY</text>
+
+  <!-- Tagline -->
+  <text x="80" y="330" font-family="DejaVu Serif, Georgia, serif" font-size="86" font-weight="bold" fill="#FFFFFF">Pesa Yako.</text>
+  <text x="80" y="428" font-family="DejaVu Serif, Georgia, serif" font-size="86" font-weight="bold" fill="#F59E0B">Wapi Ilikwenda?</text>
+  <text x="88" y="474" font-family="DejaVu Sans, Arial, sans-serif" font-size="26" fill="#9CA3AF" font-style="italic">Your money. Where did it go?</text>
+
+  <!-- Divider -->
+  <rect x="80" y="512" width="1040" height="1" fill="#1F2937"/>
+
+  <!-- Credibility line -->
+  <text x="80" y="556" font-family="DejaVu Sans, Arial, sans-serif" font-size="22" font-weight="bold" fill="#D1D5DB">Built entirely on official Office of the Auditor-General findings</text>
+
+  <!-- Hard numbers -->
+  <g font-family="DejaVu Sans, Arial, sans-serif">
+    <text x="80" y="598" font-size="28" font-weight="bold" fill="#F59E0B">Ksh 985M<tspan dx="10" font-size="18" font-weight="normal" fill="#9CA3AF">pending bills</tspan></text>
+    <text x="415" y="598" font-size="28" font-weight="bold" fill="#DC2626">Ksh 3.3B<tspan dx="10" font-size="18" font-weight="normal" fill="#9CA3AF">payroll fraud</tspan></text>
+    <text x="735" y="598" font-size="28" font-weight="bold" fill="#FFFFFF">1,885<tspan dx="10" font-size="18" font-weight="normal" fill="#9CA3AF">ghost workers</tspan></text>
+  </g>
+</svg>
