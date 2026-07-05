@@ -22,11 +22,11 @@ test.describe('API', () => {
     expect(body.db).toBe('connected');
   });
 
-  test('projects endpoint returns 14 seeded projects', async ({ request }) => {
+  test('projects endpoint returns 21 seeded projects', async ({ request }) => {
     const res = await request.get(`${SERVER}/api/projects`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    expect(body.data.length).toBe(14);
+    expect(body.data.length).toBe(21);
   });
 
   test('wards endpoint returns all 6 wards', async ({ request }) => {
@@ -40,7 +40,7 @@ test.describe('API', () => {
     const res = await request.get(`${SERVER}/api/projects/stats`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    expect(body.data.projectsTracked).toBe(14);
+    expect(body.data.projectsTracked).toBe(21);
     expect(body.data.ghostProjects).toBeGreaterThanOrEqual(1);
   });
 
@@ -259,8 +259,9 @@ test.describe('Map page', () => {
     await expect(page.locator('.leaflet-container')).toBeVisible();
   });
 
-  test('14 project markers are plotted', async ({ page }) => {
-    await expect(page.locator('path.leaflet-interactive')).toHaveCount(14);
+  test('15 project markers are plotted', async ({ page }) => {
+    // 21 seeded projects minus 6 systemic findings that carry null coordinates.
+    await expect(page.locator('path.leaflet-interactive')).toHaveCount(15);
   });
 
   test('filter buttons are clickable', async ({ page }) => {
