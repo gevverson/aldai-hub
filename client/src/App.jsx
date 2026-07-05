@@ -5,6 +5,7 @@ import WardPage from './pages/WardPage';
 import AuditTranslator from './pages/AuditTranslator';
 import ReportPage from './pages/ReportPage';
 import About from './pages/About';
+import Methodology from './pages/Methodology';
 import VerificationMap from './pages/VerificationMap';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/audit" element={<AuditTranslator />} />
           <Route path="/report" element={<ReportPage />} />
           <Route path="/about" element={<About />} />
+          <Route path="/methodology" element={<Methodology />} />
           <Route path="/map" element={<VerificationMap />} />
         </Routes>
       </main>

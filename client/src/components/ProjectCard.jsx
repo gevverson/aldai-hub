@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import VerifyModal from './VerifyModal';
 
 const ProjectCard = ({ project }) => {
@@ -90,6 +91,14 @@ const ProjectCard = ({ project }) => {
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wider mb-1" style={{ color: '#F87171' }}>Audit Finding</p>
                 <p className="text-sm leading-relaxed" style={{ color: '#D1D5DB' }}>{project.auditNote}</p>
+                {project.source && (
+                  <p className="text-xs mt-2" style={{ color: '#6B7280' }}>
+                    <span aria-hidden>📄</span> Source: {project.source} ·{' '}
+                    <Link to="/methodology" className="underline underline-offset-2 hover:text-amber-400" style={{ color: '#9CA3AF' }}>
+                      view sources
+                    </Link>
+                  </p>
+                )}
               </div>
             </div>
           </div>
