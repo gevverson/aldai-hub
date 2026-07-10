@@ -14,7 +14,7 @@ const ProjectList = ({ projects }) => {
 
   const filteredProjects = projects.filter(p => {
     if (filter === 'ALL') return true;
-    if (filter === 'CRITICAL') return ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'MISALLOCATED'].includes(p.communityStatus);
+    if (filter === 'CRITICAL') return ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'MISALLOCATED', 'IRREGULAR'].includes(p.communityStatus);
     if (filter === 'DISPUTED') return p.communityStatus === 'DISPUTED';
     if (filter === 'VERIFIED') return p.communityStatus === 'VERIFIED COMPLETE';
     return true;
@@ -36,7 +36,7 @@ const ProjectList = ({ projects }) => {
           className="px-4 py-2 rounded-full text-sm font-medium transition-all"
           style={filter === 'CRITICAL' ? { background: '#DC2626', color: '#fff', border: '1px solid #DC2626' } : { background: 'transparent', color: '#F87171', border: '1px solid rgba(220,38,38,0.3)' }}
         >
-          Critical / Stalled ({projects.filter(p => ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'MISALLOCATED'].includes(p.communityStatus)).length})
+          Critical / Stalled ({projects.filter(p => ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'MISALLOCATED', 'IRREGULAR'].includes(p.communityStatus)).length})
         </button>
         <button
           onClick={() => setFilter('DISPUTED')}

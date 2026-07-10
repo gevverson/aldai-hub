@@ -7,6 +7,7 @@ import AuditTranslator from './pages/AuditTranslator';
 import ReportPage from './pages/ReportPage';
 import About from './pages/About';
 import Methodology from './pages/Methodology';
+import CountyFindings from './pages/CountyFindings';
 
 // Lazy-load the map — Leaflet is heavy, so keep it out of the initial bundle
 // for faster first paint on low-bandwidth mobile connections.
@@ -30,6 +31,7 @@ function App() {
           <Route path="/audit" element={<AuditTranslator />} />
           <Route path="/report" element={<ReportPage />} />
           <Route path="/about" element={<About />} />
+          <Route path="/county" element={<CountyFindings />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/map" element={
             <Suspense fallback={<RouteFallback />}>
