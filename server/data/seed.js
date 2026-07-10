@@ -7,7 +7,8 @@
  */
 
 // ─────────────────────────────────────────────────────────────
-// 14 DOCUMENTED PROJECTS FROM OAG REPORTS
+// 21 DOCUMENTED PROJECTS & FINDINGS FROM OAG REPORTS
+// NG-CDF (2018/19) · Nandi County Executive & Assembly (2023/24 & 2024/25)
 // ─────────────────────────────────────────────────────────────
 export const projects = [
 
@@ -226,6 +227,117 @@ export const projects = [
     lng:             35.2500,
   },
 
+  // ── NANDI COUNTY EXECUTIVE — 2024/2025 AUDIT CYCLE ──
+  // Systemic findings (no single site) carry null coordinates and appear
+  // in the project list but not on the map.
+
+  {
+    name:            'Nandi County Pending Bills Crisis',
+    ward:            'County-wide',
+    fund:            'County Executive',
+    category:        'other',
+    allocated:       985_121_904,
+    year:            '2024/2025',
+    officialStatus:  'Payable',
+    communityStatus: 'IRREGULAR',
+    auditNote:       'Outstanding pending bills stood at Ksh 985.1M at year-end. Includes Ksh 509.1M tied to stalled development projects, Ksh 91M in unremitted statutory deductions (PAYE and pension — exposing the county to penalties), and Ksh 62.9M in historical payables dating back to 2015/2016. Accumulation on this scale is a classic symptom of contractor payments withheld to solicit illicit kickbacks.',
+    source:          'OAG Nandi County Executive Audit 2024/2025',
+    lat:             null,
+    lng:             null,
+  },
+
+  {
+    name:            'Manual Payroll & Ghost Workers',
+    ward:            'County-wide',
+    fund:            'County Executive',
+    category:        'other',
+    allocated:       3_300_000_000,
+    year:            '2024/2025',
+    officialStatus:  'Salaries Paid',
+    communityStatus: 'IRREGULAR',
+    auditNote:       'The county processed hundreds of millions in salaries through manual Excel payrolls, deliberately bypassing the secure national IPPD system. Reported staff numbers dropped abruptly from 4,884 to 2,999 — leaving 1,885 employees completely unaccounted for. EACC investigations point to a payroll scheme consuming over Ksh 3.3B, nearly 44% of the county allocation. 2023/24 recruitment was 94% from a single ethnic community, violating the National Cohesion and Integration Act.',
+    source:          'OAG Nandi County Executive Audit 2023/2024 & 2024/2025 · EACC Investigation',
+    lat:             null,
+    lng:             null,
+  },
+
+  {
+    name:            'Kapsabet County Referral Hospital (KCRH)',
+    ward:            'Kapsabet',
+    fund:            'County Executive',
+    category:        'health',
+    allocated:       8_900_000,
+    year:            '2024/2025',
+    officialStatus:  'Operational',
+    communityStatus: 'IRREGULAR',
+    auditNote:       'The Senate flagged a catastrophic data-governance failure — the hospital handled thousands of citizens’ medical and financial records with no data-retention schedule, a "legal time bomb" under the Data Protection Act. Ksh 8.9M was lost to "irregular waivers" granted without the committee minutes required by Section 159 of the PFM Act. Its 34 occupied staff housing units reported a nil (zero) rental balance, strongly suggesting rent is collected off-book.',
+    source:          'OAG Nandi County Executive Audit 2024/2025 · Senate PIC Special Funds Committee',
+    lat:             0.2028,
+    lng:             35.1056,
+  },
+
+  {
+    name:            'KDSP II Donor Fund Under-Absorption',
+    ward:            'County-wide',
+    fund:            'County Executive',
+    category:        'other',
+    allocated:       57_500_000,
+    year:            '2024/2025',
+    officialStatus:  'Budgeted',
+    communityStatus: 'IRREGULAR',
+    auditNote:       'Under the World Bank / IDA-funded Second Kenya Devolution Support Programme (KDSP II) capacity-building grant, the county absorbed only Ksh 19.9M of a Ksh 57.5M budget — a 65% under-absorption of Ksh 37.6M. Failing to spend available donor funds directly deprives citizens of planned service-delivery improvements and signals administrative incompetence to international partners.',
+    source:          'OAG Nandi County Executive Audit 2024/2025',
+    lat:             null,
+    lng:             null,
+  },
+
+  // ── NANDI COUNTY ASSEMBLY — 2023/2024 & 2024/2025 AUDIT CYCLES ──
+
+  {
+    name:            'County Assembly — Hidden Deferred Income',
+    ward:            'County Assembly',
+    fund:            'County Assembly',
+    category:        'other',
+    allocated:       56_027_772,
+    year:            '2024/2025',
+    officialStatus:  'Disclosed',
+    communityStatus: 'IRREGULAR',
+    auditNote:       'The Assembly — the body legally tasked with overseeing the Executive — failed to disclose deferred income of Ksh 56M in its own financial statements. Omitting tens of millions from the official statement of financial performance obscures the Assembly’s true liquidity and outstanding liabilities. Its accounts received a Qualified Opinion.',
+    source:          'OAG Nandi County Assembly Audit 2024/2025',
+    lat:             null,
+    lng:             null,
+  },
+
+  {
+    name:            'County Assembly — Backdated Expenditure',
+    ward:            'County Assembly',
+    fund:            'County Assembly',
+    category:        'other',
+    allocated:       77_115_027,
+    year:            '2023/2024',
+    officialStatus:  'Recorded 30 June 2024',
+    communityStatus: 'IRREGULAR',
+    auditNote:       'The Auditor-General flagged Ksh 77.1M paid out AFTER the financial year cut-off but deliberately backdated in the records to appear as if incurred on 30 June 2024. Falsifying transaction dates is a critical red flag used to manipulate budget-absorption rates and cover irregular spending outside the authorised fiscal window. An unexplained Ksh 35M variance was also found in County Revenue Fund transfers.',
+    source:          'OAG Nandi County Assembly Audit 2023/2024',
+    lat:             null,
+    lng:             null,
+  },
+
+  {
+    name:            'County Assembly — Unsupported Travel Allowances',
+    ward:            'County Assembly',
+    fund:            'County Assembly',
+    category:        'transport',
+    allocated:       54_200_000,
+    year:            '2023/2024',
+    officialStatus:  'Paid',
+    communityStatus: 'IRREGULAR',
+    auditNote:       'Over Ksh 54.2M in MCA travel was rendered highly questionable. This includes Ksh 9,999,999 in foreign travel and subsistence entirely unsupported by travel logs, boarding passes or back-to-office reports, and domestic transport paid at a flat Ksh 6,000 per MCA per day regardless of distance actually covered. The Assembly also ran a single-person internal audit function with no risk register — leaving it structurally unable to hold the Executive accountable.',
+    source:          'OAG Nandi County Assembly Audit 2023/2024',
+    lat:             null,
+    lng:             null,
+  },
+
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -299,10 +411,13 @@ export const wards = [
 // Source: OAG Kenya Reports + EACC Investigation Records
 // ─────────────────────────────────────────────────────────────
 export const globalStats = {
-  payrollFraud:         3_300_000_000,   // Ksh 3.3B — EACC active investigation
-  ghostEmployees:       1_885,           // OAG payroll audit finding
+  payrollFraud:         3_300_000_000,   // Ksh 3.3B — EACC active payroll investigation
+  ghostEmployees:       1_885,           // Staff unaccounted for (4,884 → 2,999) — OAG payroll audit
+  pendingBills:         985_121_904,     // Ksh 985.1M — County Executive pending bills 2024/2025
+  countyAssemblyHidden: 56_027_772,      // Ksh 56M — deferred income omitted by the County Assembly
+  donorUnabsorbed:      37_600_000,      // Ksh 37.6M — KDSP II grant, 65% of budget unabsorbed
   healthFacilitiesShut: 144,             // Facilities shut across Nandi County
   stalledProjects:      491,             // 2018/2019 audit period alone
-  bursaryUnreceipted:   50_200_000,      // Ksh 50.2M — no acknowledgement receipts
-  totalTracked:         14,              // Projects in this database
+  bursaryUnreceipted:   50_200_000,      // Ksh 50.2M — bursaries with no acknowledgement receipts
+  totalTracked:         21,              // Documented projects & findings in this database
 };

@@ -2,12 +2,12 @@ import AnimatedCounter from './AnimatedCounter';
 
 const STATS = [
   {
-    value: 50,
-    suffix: 'B+',
+    value: 985,
+    suffix: 'M',
     prefix: 'Ksh ',
     decimals: 0,
-    label: 'FEDHA ZILIZOFUATILIWA',
-    labelEn: 'Total county funds tracked',
+    label: 'MADENI YASIYOLIPWA',
+    labelEn: 'Pending bills, County Executive (2024/25)',
     accent: '#D97706',
     bg: 'rgba(217,119,6,0.07)',
     border: 'rgba(217,119,6,0.2)',
@@ -26,16 +26,16 @@ const STATS = [
     icon: '🚨',
   },
   {
-    value: 491,
+    value: 1885,
     suffix: '',
     prefix: '',
     decimals: 0,
-    label: 'MIRADI ILIYOSIMAMA',
-    labelEn: 'Stalled / abandoned projects (2018–2019)',
+    label: 'WAFANYAKAZI HEWA',
+    labelEn: 'Ghost workers unaccounted for (4,884 → 2,999)',
     accent: '#F59E0B',
     bg: 'rgba(245,158,11,0.07)',
     border: 'rgba(245,158,11,0.2)',
-    icon: '🏚️',
+    icon: '👻',
   },
   {
     value: 144,
@@ -80,7 +80,7 @@ const QuickStats = () => {
               className="font-bold uppercase tracking-widest mb-1"
               style={{ color: '#DC2626', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
             >
-              Kwa Mujibu wa Ripoti za OAG · Source: OAG Kenya Reports FY 2019–2024
+              Kwa Mujibu wa Ripoti za OAG · Source: OAG Kenya Reports FY 2018/19–2024/25
             </p>
             <h2
               className="font-display text-white leading-tight"

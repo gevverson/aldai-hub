@@ -7,17 +7,17 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:3001',
-        changeOrigin: true,
-      },
-      '/uploads': {
-        target: process.env.VITE_API_URL || 'http://localhost:3001',
-        changeOrigin: true,
-      },
-    },
-  },
+  // Same proxy for `vite` (dev) and `vite preview` (prod build) so the
+  // frontend can reach the API on the same origin in both modes — used by
+  // the hermetic E2E run, which serves the production build via preview.
+  server:  { port: 5173, proxy: apiProxy() },
+  preview: { port: 4173, proxy: apiProxy() },
 })
+
+function apiProxy() {
+  const target = process.env.VITE_API_URL || 'http://localhost:3001';
+  return {
+    '/api':     { target, changeOrigin: true },
+    '/uploads': { target, changeOrigin: true },
+  };
+}

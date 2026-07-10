@@ -1,11 +1,23 @@
 import { Routes, Route } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import WardPage from './pages/WardPage';
 import AuditTranslator from './pages/AuditTranslator';
 import ReportPage from './pages/ReportPage';
 import About from './pages/About';
-import VerificationMap from './pages/VerificationMap';
+import Methodology from './pages/Methodology';
+
+// Lazy-load the map — Leaflet is heavy, so keep it out of the initial bundle
+// for faster first paint on low-bandwidth mobile connections.
+const VerificationMap = lazy(() => import('./pages/VerificationMap'));
+
+const RouteFallback = () => (
+  <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
+    <div className="w-10 h-10 border-4 rounded-full animate-spin"
+         style={{ borderColor: '#D97706', borderTopColor: 'transparent' }} />
+  </div>
+);
 
 function App() {
   return (
@@ -18,7 +30,12 @@ function App() {
           <Route path="/audit" element={<AuditTranslator />} />
           <Route path="/report" element={<ReportPage />} />
           <Route path="/about" element={<About />} />
-          <Route path="/map" element={<VerificationMap />} />
+          <Route path="/methodology" element={<Methodology />} />
+          <Route path="/map" element={
+            <Suspense fallback={<RouteFallback />}>
+              <VerificationMap />
+            </Suspense>
+          } />
         </Routes>
       </main>
 

@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css'; // bundled locally — no CDN, works offline
 import VerifyModal from '../components/VerifyModal';
 
-// Fix Leaflet icon paths for Vite
-import L from 'leaflet';
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
+// NOTE: all markers are SVG CircleMarkers, so Leaflet's default image-based
+// icons are never used — no icon-path shim needed.
 
 const STATUS_CONFIG = {
   'GHOST PROJECT':  { color: '#7c3aed', bg: 'bg-purple-100 text-purple-800', label: '👻 Ghost', radius: 14 },

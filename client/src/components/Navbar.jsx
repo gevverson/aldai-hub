@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { to: '/map',    label: 'Map',      sw: 'Mapa' },
   { to: '/report', label: 'Report',   sw: 'Ripoti' },
   { to: '/audit',  label: 'Audit AI', sw: 'Ukaguzi' },
+  { to: '/methodology', label: 'Sources', sw: 'Vyanzo' },
   { to: '/about',  label: 'About',    sw: 'Kuhusu' },
 ];
 
