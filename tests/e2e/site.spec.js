@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER = 'https://macho-ya-mwananchi-server.onrender.com';
+// Points at the local API in CI (hermetic run); falls back to production
+// for ad-hoc smoke checks against the live deployment.
+const SERVER = process.env.SERVER_URL || 'https://macho-ya-mwananchi-server.onrender.com';
 
 // ── warm up the backend before anything else ─────────────────────────────────
 test.beforeAll(async ({ request }) => {
@@ -331,7 +333,13 @@ test.describe('AI Audit Translator', () => {
     expect(phEn).toMatch(/question|Type/i);
   });
 
-  test('audit API returns a structured answer', async ({ page }) => {
+  test('audit API returns a structured answer', async ({ page, request }) => {
+    // Live LLM dependency — skip when no AI backend is reachable (e.g. hermetic CI).
+    const status = await request.get(`${SERVER}/api/audit/status`).then((r) => r.json()).catch(() => ({}));
+    test.skip(
+      status.python_service !== 'online' && status.fallback !== 'gemini-direct-fallback',
+      'AI backend offline — live-answer test skipped'
+    );
     const res = await page.request.post('/api/audit/query', {
       data: { question: 'How much was spent on Kobujoi hospital?', language: 'en' },
     });
@@ -343,7 +351,13 @@ test.describe('AI Audit Translator', () => {
     expect(body.answer).toMatch(/JIBU|📋|Answer/i);
   });
 
-  test('session history accordion appears after submitting a question', async ({ page }) => {
+  test('session history accordion appears after submitting a question', async ({ page, request }) => {
+    // Live LLM dependency — skip when no AI backend is reachable (e.g. hermetic CI).
+    const status = await request.get(`${SERVER}/api/audit/status`).then((r) => r.json()).catch(() => ({}));
+    test.skip(
+      status.python_service !== 'online' && status.fallback !== 'gemini-direct-fallback',
+      'AI backend offline — submit-and-history test skipped'
+    );
     // Submit a question first — history only renders once messages exist
     await page.locator('button').filter({ hasText: /Kobujoi|Kimaren/i }).first().click();
     await page.locator('textarea').first().press('Control+Enter');

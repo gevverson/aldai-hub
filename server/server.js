@@ -73,12 +73,17 @@ app.use(mongoSanitize());
 
 // ── Rate limiters ─────────────────────────────────────────────
 
+// Bypass rate limiting only when explicitly enabled (hermetic E2E / CI).
+// Unset in production, so live behaviour is unchanged.
+const skipRateLimit = () => process.env.DISABLE_RATE_LIMIT === '1';
+
 // General: all /api routes — 100 req / 15 min / IP
 const generalLimiter = rateLimit({
   windowMs:        15 * 60 * 1000,
   max:             100,
   standardHeaders: true,
   legacyHeaders:   false,
+  skip:            skipRateLimit,
   message: {
     success: false,
     error:   'Maombi mengi sana. Jaribu tena baada ya dakika 15.',
@@ -92,6 +97,7 @@ const reportSubmitLimiter = rateLimit({
   max:             5,
   standardHeaders: true,
   legacyHeaders:   false,
+  skip:            skipRateLimit,
   message: {
     success: false,
     error:   'Umefika kikomo cha ripoti. Jaribu tena baada ya saa moja.',
@@ -105,6 +111,7 @@ const verifySubmitLimiter = rateLimit({
   max:             10,
   standardHeaders: true,
   legacyHeaders:   false,
+  skip:            skipRateLimit,
   message: {
     success: false,
     error:   'Umefika kikomo cha uthibitisho. Jaribu tena baada ya saa moja.',

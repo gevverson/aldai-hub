@@ -8,68 +8,97 @@ on:
 
 jobs:
   e2e:
-    name: Playwright E2E
+    name: Playwright E2E (hermetic)
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # Ephemeral MongoDB for this run — no dependency on production data.
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1}).ok'"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+
+    env:
+      MONGO_URI: mongodb://127.0.0.1:27017/mym_e2e
+      API_PORT: '3011'
+      PREVIEW_PORT: '4173'
+
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-      # ── 2. Node.js ───────────────────────────────────────────────
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-      # ── 3. Install deps + Playwright browsers ─────────────────────
-      - name: Install dependencies
+      # ── Install dependencies (root = Playwright, server, client) ──
+      - name: Install root deps
         run: npm ci
+
+      - name: Install server deps
+        run: npm ci
+        working-directory: server
+
+      - name: Install client deps
+        run: npm ci
+        working-directory: client
 
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
 
-      # ── 4. Wake up Render + wait for rate limit window to clear ──────
-      - name: Wake up Render services
+      # ── Build the client (tested against the production build) ──
+      - name: Build client
+        run: npm run build
+        working-directory: client
+
+      # ── Seed the ephemeral database ──
+      - name: Seed database
+        run: npm run seed
+        working-directory: server
+
+      # ── Start the stack and run the suite in one shell so the
+      #    background servers stay alive for the whole test run. ──
+      - name: Start stack and run E2E
         run: |
-          echo "Pinging server..."
-          for i in 1 2 3 4 5 6 7 8; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              https://macho-ya-mwananchi-server.onrender.com/api/health \
-              --max-time 30)
-            echo "Attempt $i: HTTP $STATUS"
-            if [ "$STATUS" = "200" ]; then
-              echo "Server awake ✅"
-              break
-            fi
-            sleep 20
+          # API server — rate limiting disabled so the suite isn't throttled.
+          ( cd "$GITHUB_WORKSPACE/server" && \
+            DISABLE_RATE_LIMIT=1 NODE_ENV=development PORT="$API_PORT" \
+            node server.js > /tmp/api.log 2>&1 & )
+
+          # Client — serve the production build, proxying /api to the API.
+          ( cd "$GITHUB_WORKSPACE/client" && \
+            VITE_API_URL=http://127.0.0.1:"$API_PORT" \
+            npx vite preview --port "$PREVIEW_PORT" --host 127.0.0.1 > /tmp/preview.log 2>&1 & )
+
+          # Wait for both to answer.
+          for i in $(seq 1 30); do
+            A=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://127.0.0.1:$API_PORT/api/health" || true)
+            C=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://127.0.0.1:$PREVIEW_PORT/" || true)
+            echo "wait $i: api=$A client=$C"
+            [ "$A" = "200" ] && [ "$C" = "200" ] && break
+            sleep 2
           done
 
-      # Wait 20s after wake-up so the server is fully ready before tests hammer it
-      - name: Allow server to stabilise
-        run: sleep 20
+          BASE_URL="http://127.0.0.1:$PREVIEW_PORT" \
+          SERVER_URL="http://127.0.0.1:$API_PORT" \
+          CI=true \
+            npx playwright test
 
-      # ── 5. Run E2E tests ──────────────────────────────────────────
-      - name: Run Playwright tests
-        run: npx playwright test
-        env:
-          BASE_URL: https://macho-ya-mwananchi-client.onrender.com
-          CI: true
-
-      # ── 6. Upload report on failure ───────────────────────────────
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Dump server logs on failure
+        if: failure()
+        run: |
+          echo "===== API LOG ====="; cat /tmp/api.log || true
+          echo "===== PREVIEW LOG ====="; cat /tmp/preview.log || true
