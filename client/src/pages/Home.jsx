@@ -28,13 +28,6 @@ const timeAgo = (dateStr) => {
   return `${days} day${days > 1 ? 's' : ''} ago`;
 };
 
-const FALLBACK_REPORTS = [
-  { _id: '1', ward: 'Kemeloi-Maraba', category: 'ghost', text: 'Kimaren Girls Secondary does not exist. I went to the location — there is only bush. The school that received Ksh 3.2M was never built.', verifiedBy: 4, createdAt: new Date(Date.now() - 2 * 3600_000).toISOString() },
-  { _id: '2', ward: 'Kabwareng',      category: 'stalled', text: 'Borehole project funded in 2019 has been incomplete for 5 years. The pump was installed but never connected to water supply.', verifiedBy: 2, createdAt: new Date(Date.now() - 5 * 3600_000).toISOString() },
-  { _id: '3', ward: 'Terik',          category: 'health',  text: 'Terik Health Centre has had no drugs for 3 months. Patients are being sent to buy from private pharmacies.', verifiedBy: 7, createdAt: new Date(Date.now() - 12 * 3600_000).toISOString() },
-  { _id: '4', ward: 'Kobujoi',        category: 'road',    text: 'New tarmac road project stalled at 40% completion. Contractor has not returned in 8 months. Money reportedly already paid.', verifiedBy: 1, createdAt: new Date(Date.now() - 24 * 3600_000).toISOString() },
-];
-
 const ReportCard = ({ report }) => {
   const cat = CATEGORY_META[report.category] || CATEGORY_META.other;
   const snippet = (report.text || '').slice(0, 120);
@@ -103,11 +96,11 @@ const ReportsFeed = () => {
     fetch('/api/reports?limit=8&sort=newest')
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
-        setReports(Array.isArray(data) && data.length > 0 ? data : FALLBACK_REPORTS);
+        setReports(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(() => {
-        setReports(FALLBACK_REPORTS);
+        setReports([]);
         setLoading(false);
       });
   };
@@ -181,6 +174,24 @@ const ReportsFeed = () => {
                 <div className="skeleton" style={{ height: '12px', width: '40%' }} />
               </div>
             ))}
+          </div>
+        ) : reports.length === 0 ? (
+          <div className="rounded-2xl p-10 text-center" style={{ background: '#111827', border: '1px solid #1F2937' }}>
+            <div className="text-4xl mb-3" aria-hidden>📣</div>
+            <p className="font-display text-white mb-1" style={{ fontSize: '19px' }}>No citizen reports yet</p>
+            <p className="mb-2" style={{ color: '#D97706', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic' }}>
+              Bado hakuna ripoti za wananchi
+            </p>
+            <p className="max-w-md mx-auto mb-5" style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+              Be the first to report a stalled, abandoned, or ghost project in your ward — completely anonymously.
+            </p>
+            <Link
+              to="/report"
+              className="inline-block font-bold py-2.5 px-6 rounded-xl transition-all"
+              style={{ background: '#D97706', color: '#0A0A0A', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              🚨 Report an Issue (Ripoti)
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
