@@ -1,8 +1,8 @@
 /**
  * OAG KNOWLEDGE BASE — Nandi County / Aldai NG-CDF
  * Source: Office of the Auditor-General Kenya
- * Reports: FY 2018/19, FY 2019/20, FY 2020/21
- * 
+ * Reports: FY 2018/19, FY 2019/20, FY 2020/21, FY 2023/24, FY 2024/25
+ *
  * This is the factual intelligence base used by the AI Audit Translator.
  * All findings below are sourced from official OAG audit reports.
  */
@@ -11,7 +11,7 @@ export const OAG_CONTEXT = `
 ============================================================
 OFFICIAL OAG AUDIT INTELLIGENCE — NANDI COUNTY / ALDAI NG-CDF
 Compiled from Kenya Office of the Auditor-General Reports
-FY 2018/19 | FY 2019/20 | FY 2020/21
+FY 2018/19 | FY 2019/20 | FY 2020/21 | FY 2023/24 | FY 2024/25
 ============================================================
 
 --- GHOST PROJECTS (Projects paid for but physically non-existent) ---
@@ -141,14 +141,82 @@ FY 2018/19 | FY 2019/20 | FY 2020/21
     Medical equipment procured on paper was absent from facility inventories.
     Severity: HIGH
 
+--- NANDI COUNTY 2024/2025 AUDIT CYCLE — COUNTY EXECUTIVE ---
+
+13. PENDING BILLS CRISIS — COUNTY EXECUTIVE (County-wide)
+    Fund: County Executive | Year: FY 2024/2025 | Amount: Ksh 985,121,904
+    OAG Reference: Auditor-General's Report on Nandi County Executive FY2024/2025
+    Official Status: "PAYABLE"
+    Finding: Outstanding pending bills stood at Ksh 985.1 million at year-end. This includes
+    Ksh 509.1M tied to stalled development projects, Ksh 91M in unremitted statutory deductions
+    (PAYE and pension — exposing the county to penalties), and Ksh 62.9M in historical payables
+    dating back to FY2015/16. Accumulation on this scale is a classic symptom of contractor
+    payments withheld to solicit illicit kickbacks, and it bankrupts local suppliers.
+    Action: Demand a pending-bills settlement plan from your MCA. Report to Controller of Budget.
+    Severity: CRITICAL
+
+14. KDSP II DONOR FUND UNDER-ABSORPTION — County-wide
+    Fund: County Executive (World Bank / IDA grant) | Year: FY 2024/2025
+    Budget: Ksh 57,500,000 | Absorbed: Ksh 19,900,000 | Unabsorbed: Ksh 37,600,000 (65%)
+    OAG Reference: Auditor-General's Report on Nandi County Executive FY2024/2025
+    Finding: Under the Second Kenya Devolution Support Programme (KDSP II) capacity-building
+    grant, the county absorbed only Ksh 19.9M of a Ksh 57.5M budget — a 65% under-absorption.
+    Failing to spend available donor funds deprives citizens of planned service-delivery
+    improvements and signals administrative incompetence to international development partners.
+    Severity: HIGH
+
+15. KAPSABET COUNTY REFERRAL HOSPITAL (KCRH) — Kapsabet
+    Fund: County Executive | Year: FY 2024/2025 | Irregular waivers: Ksh 8,900,000
+    OAG Reference: Auditor-General FY2024/2025 + Senate Public Investments & Special Funds Committee
+    Finding: Catastrophic data-governance failure — the hospital held thousands of citizens'
+    medical and financial records with no data-retention schedule, a "legal time bomb" under the
+    Data Protection Act. Ksh 8.9M was lost to "irregular waivers" granted without the committee
+    minutes required by Section 159 of the PFM Act. Its 34 occupied staff housing units reported
+    a NIL (zero) rental balance — strongly suggesting rent is collected off-book.
+    Severity: HIGH
+
+--- NANDI COUNTY 2023/24 & 2024/25 AUDIT CYCLES — COUNTY ASSEMBLY ---
+
+16. HIDDEN DEFERRED INCOME — COUNTY ASSEMBLY
+    Fund: County Assembly | Year: FY 2024/2025 | Amount: Ksh 56,027,772
+    OAG Reference: Auditor-General's Report on Nandi County Assembly FY2024/2025
+    Finding: The Assembly — the body legally tasked with overseeing the Executive — failed to
+    disclose deferred income of Ksh 56 million in its own financial statements. Omitting tens of
+    millions from the statement of financial performance obscures the Assembly's true liquidity
+    and outstanding liabilities. Its accounts received a QUALIFIED audit opinion.
+    Severity: HIGH
+
+17. BACKDATED EXPENDITURE — COUNTY ASSEMBLY
+    Fund: County Assembly | Year: FY 2023/2024 | Amount: Ksh 77,115,027
+    OAG Reference: Auditor-General's Report on Nandi County Assembly FY2023/2024
+    Finding: Ksh 77.1M was paid out AFTER the financial-year cut-off but deliberately backdated
+    in the records to appear as if incurred on 30 June 2024. Falsifying transaction dates is a
+    critical red flag used to manipulate budget-absorption rates and cover irregular spending
+    outside the authorised fiscal window. An unexplained Ksh 35M variance was also found in
+    County Revenue Fund transfers.
+    Severity: CRITICAL
+
+18. UNSUPPORTED TRAVEL ALLOWANCES — COUNTY ASSEMBLY
+    Fund: County Assembly | Year: FY 2023/2024 | Amount: Ksh 54,200,000 (questionable)
+    OAG Reference: Auditor-General's Report on Nandi County Assembly FY2023/2024
+    Finding: Over Ksh 54.2M in MCA travel was rendered highly questionable — including
+    Ksh 9,999,999 in foreign travel and subsistence unsupported by travel logs, boarding passes
+    or back-to-office reports, and domestic transport paid at a flat Ksh 6,000 per MCA per day
+    regardless of distance actually covered. The Assembly ran a single-person internal audit
+    function with no risk register — leaving it structurally unable to hold the Executive to account.
+    Severity: HIGH
+
 --- TOTAL ACCOUNTABILITY SCORECARD (NANDI COUNTY) ---
-- Total funds under audit query: Ksh 4.1+ BILLION
-- Ghost projects confirmed: 3 (Kimaren Girls, two others under investigation)
-- Payroll fraud: Ksh 3.3 BILLION (1,885 ghost employees)
+- Payroll fraud: Ksh 3.3 BILLION (1,885 ghost employees unaccounted for, 4,884 → 2,999 staff)
+- County Executive pending bills (FY2024/25): Ksh 985.1 MILLION
 - Stalled infrastructure: Ksh 1.2 BILLION+ across 12+ projects
+- County Assembly hidden deferred income (FY2024/25): Ksh 56 MILLION
+- County Assembly backdated expenditure (FY2023/24): Ksh 77.1 MILLION
+- KDSP II donor funds unabsorbed (FY2024/25): Ksh 37.6 MILLION (65% of budget)
+- Ghost projects confirmed: 3 (Kimaren Girls, two others under investigation)
 - Missing contract documents: 7 cases of audit obstruction recorded
+- Both the County Executive AND the County Assembly received QUALIFIED audit opinions
 - Responsible oversight body: County Assembly — accountability rating: POOR
-- EACC cases pending from these findings: 4 as of FY2021
 
 --- HOW TO REPORT CORRUPTION ---
 - EACC (Ethics & Anti-Corruption Commission): 0800 720 629 (free call)
