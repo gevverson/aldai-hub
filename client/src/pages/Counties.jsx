@@ -39,10 +39,10 @@ const Counties = () => {
       projects: acc.projects + (c.projectCount || 0),
       value: acc.value + (c.totalAllocated || 0),
       ghosts: acc.ghosts + (c.ghostCount || 0),
-      covered: acc.covered + c.constituencies.filter((k) => k.projectCount > 0).length,
-      constituencies: acc.constituencies + c.constituencies.length,
+      liveCounties: acc.liveCounties + (c.projectCount > 0 ? 1 : 0),
+      countyTotal: acc.countyTotal + 1,
     }),
-    { projects: 0, value: 0, ghosts: 0, covered: 0, constituencies: 0 }
+    { projects: 0, value: 0, ghosts: 0, liveCounties: 0, countyTotal: 0 }
   );
 
   return (
@@ -78,7 +78,7 @@ const Counties = () => {
                 { v: totals.projects, l: 'Projects audited' },
                 { v: formatKsh(totals.value), l: 'Public funds traced' },
                 { v: totals.ghosts, l: 'Ghost projects found', danger: true },
-                { v: `${totals.covered}/${totals.constituencies}`, l: 'Constituencies covered' },
+                { v: `${totals.liveCounties}/${totals.countyTotal}`, l: 'Counties live' },
               ].map((s) => (
                 <div key={s.l} className="text-center">
                   <p
@@ -113,28 +113,72 @@ const Counties = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {loading
-            ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
-            : counties.map((county) => (
-                <AreaCard
-                  key={county.name}
-                  area={county}
-                  to={`/county/${slug(county.name)}`}
-                  kicker={`${county.constituencies.length} constituencies`}
-                />
-              ))}
-        </div>
-
-        {!loading && !error && (
-          <p
-            className="text-center mt-10"
-            style={{ color: '#4B5563', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}
-          >
-            More counties are added as their Auditor-General reports are ingested.
-            Coverage grows; claims never outrun the sources.
-          </p>
+        {loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         )}
+
+        {!loading && !error && (() => {
+          // Lead with counties that have live audit data; list the rest as a
+          // compact "coming soon" grid so the real evidence is never buried.
+          const live = counties.filter((c) => c.projectCount > 0);
+          const soon = counties.filter((c) => c.projectCount === 0);
+          return (
+            <>
+              {live.length > 0 && (
+                <>
+                  <h2 className="font-display text-white mb-1" style={{ fontSize: '22px' }}>
+                    Live now
+                  </h2>
+                  <p className="mb-5" style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
+                    Counties with Auditor-General data ingested and verified.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
+                    {live.map((county) => (
+                      <AreaCard
+                        key={county.name}
+                        area={county}
+                        to={`/counties/${slug(county.name)}`}
+                        kicker={`${county.constituencies.length} constituencies`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {soon.length > 0 && (
+                <>
+                  <h2 className="font-display text-white mb-1" style={{ fontSize: '22px' }}>
+                    Coming soon · {soon.length} counties
+                  </h2>
+                  <p className="mb-5" style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
+                    Every Kenyan county is mapped. Evidence fills in as each one's
+                    Auditor-General reports are processed — claims never outrun the sources.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {soon.map((county) => (
+                      <span
+                        key={county.name}
+                        className="px-3 py-1.5 rounded-full"
+                        style={{
+                          background: '#0D1117',
+                          border: '1px solid #1F2937',
+                          color: '#6B7280',
+                          fontSize: '12px',
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}
+                        title={`${county.constituencies.length} constituencies · data coming`}
+                      >
+                        {county.name}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );

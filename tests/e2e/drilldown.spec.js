@@ -19,9 +19,12 @@ test.describe('geography drill-down', () => {
     await expect(page.getByRole('link', { name: /Uasin Gishu/i }).first()).toBeVisible();
   });
 
-  test('counties with no data are shown honestly, not as clickable zeros', async ({ page }) => {
+  test('counties with no data are shown honestly as "coming soon", not fake zeros', async ({ page }) => {
     await page.goto(`${BASE}/counties`);
-    await expect(page.getByText(/No audited project register published/i).first()).toBeVisible();
+    // The national catalogue lists every county; those without ingested data
+    // appear under a "Coming soon" section rather than as misleading zero cards.
+    await expect(page.getByRole('heading', { name: /Coming soon/i })).toBeVisible();
+    await expect(page.getByText(/Mombasa/).first()).toBeVisible();
   });
 
   test('drills county -> constituency -> cited projects', async ({ page }) => {
@@ -63,7 +66,8 @@ test.describe('geography drill-down', () => {
   });
 
   test('unknown county fails gracefully instead of crashing', async ({ page }) => {
-    await page.goto(`${BASE}/county/nairobi`);
+    // A name that is not one of Kenya's 47 counties.
+    await page.goto(`${BASE}/counties/atlantis`);
     await expect(page.getByRole('heading', { name: /not covered yet/i })).toBeVisible();
   });
 

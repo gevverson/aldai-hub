@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import AlertTicker from './AlertTicker';
 
 const NAV_LINKS = [
   { to: '/',       label: 'Projects', sw: 'Miradi',  exact: true },
-  { to: '/counties', label: 'Counties', sw: 'Kaunti' },
-  { to: '/county', label: 'Findings', sw: 'Matokeo' },
+  // `match` lets a link stay active across a whole section. The Counties tab
+  // covers the entire county → constituency drill-down; Findings is exact so
+  // it never lights up on /counties/* pages.
+  { to: '/counties', label: 'Counties', sw: 'Kaunti', match: /^\/(counties|constituency)/ },
+  { to: '/county', label: 'Findings', sw: 'Matokeo', exact: true },
   { to: '/map',    label: 'Map',      sw: 'Mapa' },
   { to: '/report', label: 'Report',   sw: 'Ripoti' },
   { to: '/audit',  label: 'Audit AI', sw: 'Ukaguzi' },
@@ -19,6 +22,12 @@ const Navbar = () => {
   const [todayReports, setTodayReports] = useState(null);
   const [navHeight, setNavHeight] = useState(92);
   const wrapperRef = useRef(null);
+  const { pathname } = useLocation();
+
+  // A link is active if its section regex matches, else fall back to the
+  // router's own isActive (exact/prefix) for links without a `match`.
+  const linkActive = (link, routerActive) =>
+    link.match ? link.match.test(pathname) : routerActive;
 
   /* Scroll detection */
   useEffect(() => {
@@ -107,21 +116,21 @@ const Navbar = () => {
                   className="font-semibold uppercase tracking-widest leading-none mt-0.5"
                   style={{ fontSize: '9px', color: '#D97706' }}
                 >
-                  Citizen's Eye · Aldai Constituency
+                  Citizen's Eye · Public Fund Accountability
                 </p>
               </div>
             </Link>
 
             {/* ── Desktop Nav Links ── */}
             <div className="hidden md:flex items-center gap-1">
-              {NAV_LINKS.map(({ to, label, sw, exact }) => (
+              {NAV_LINKS.map((link) => (
                 <NavLink
-                  key={to}
-                  to={to}
-                  end={exact}
+                  key={link.to}
+                  to={link.to}
+                  end={link.exact}
                   className={({ isActive }) =>
                     `relative flex flex-col items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                      isActive
+                      linkActive(link, isActive)
                         ? 'text-amber-400 bg-amber-500/10'
                         : 'text-gray-400 hover:text-white hover:bg-white/6'
                     }`
@@ -130,12 +139,12 @@ const Navbar = () => {
                 >
                   {({ isActive }) => (
                     <>
-                      <span>{label}</span>
+                      <span>{link.label}</span>
                       <span
                         style={{ fontSize: '9px', marginTop: '1px', opacity: 0.6 }}
-                        className={isActive ? 'text-amber-300' : 'text-gray-500'}
+                        className={linkActive(link, isActive) ? 'text-amber-300' : 'text-gray-500'}
                       >
-                        {sw}
+                        {link.sw}
                       </span>
                     </>
                   )}
@@ -215,15 +224,15 @@ const Navbar = () => {
           style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(16px)', top: `${navHeight}px` }}
         >
           <div className="flex flex-col flex-1 px-6 py-8 gap-2">
-            {NAV_LINKS.map(({ to, label, sw, exact }) => (
+            {NAV_LINKS.map((link) => (
               <NavLink
-                key={to}
-                to={to}
-                end={exact}
+                key={link.to}
+                to={link.to}
+                end={link.exact}
                 onClick={closeMenu}
                 className={({ isActive }) =>
                   `flex items-center justify-between px-5 py-4 rounded-2xl transition-all ${
-                    isActive
+                    linkActive(link, isActive)
                       ? 'bg-amber-500/15 border border-amber-500/30'
                       : 'border border-transparent hover:bg-white/5'
                   }`
@@ -232,11 +241,11 @@ const Navbar = () => {
                 {({ isActive }) => (
                   <>
                     <span
-                      className={`text-xl font-display font-bold ${isActive ? 'text-amber-400' : 'text-white'}`}
+                      className={`text-xl font-display font-bold ${linkActive(link, isActive) ? 'text-amber-400' : 'text-white'}`}
                     >
-                      {label}
+                      {link.label}
                     </span>
-                    <span className="text-gray-500 text-sm">{sw} →</span>
+                    <span className="text-gray-500 text-sm">{link.sw} →</span>
                   </>
                 )}
               </NavLink>

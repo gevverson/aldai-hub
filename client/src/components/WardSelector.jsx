@@ -245,7 +245,7 @@ const WardSelector = () => {
             className="font-bold uppercase tracking-widest mb-3"
             style={{ color: '#D97706', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
           >
-            Aldai Constituency · 6 Wards
+            Nandi County · Aldai Constituency
           </p>
           <h2
             className="font-display text-white leading-tight mb-3"

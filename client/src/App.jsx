@@ -36,10 +36,12 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/county" element={<CountyFindings />} />
 
-          {/* County → Constituency → Projects drill-down */}
+          {/* County → Constituency → Projects drill-down.
+              Kept under /counties/* so the "Counties" nav item prefix-matches
+              the whole flow, and never collides with /county (Findings). */}
           <Route path="/counties" element={<Counties />} />
-          <Route path="/county/:countyName" element={<CountyPage />} />
-          <Route path="/county/:countyName/county-wide" element={<ConstituencyPage countyWide />} />
+          <Route path="/counties/:countyName" element={<CountyPage />} />
+          <Route path="/counties/:countyName/county-wide" element={<ConstituencyPage countyWide />} />
           <Route path="/constituency/:constituencyName" element={<ConstituencyPage />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/map" element={
@@ -75,7 +77,7 @@ function App() {
                 className="font-semibold uppercase tracking-widest leading-none mt-0.5"
                 style={{ fontSize: '9px', color: '#D97706' }}
               >
-                Citizen's Eye · Aldai Constituency Accountability
+                Citizen's Eye · Public Fund Accountability · Kenya
               </p>
             </div>
           </div>

@@ -74,7 +74,7 @@ const ConstituencyPage = ({ countyWide = false }) => {
   }, [projects]);
 
   const county = projects[0]?.county || countyName;
-  const backTo = county ? `/county/${slug(county)}` : '/counties';
+  const backTo = county ? `/counties/${slug(county)}` : '/counties';
   const health = HEALTH[healthOf(stats)];
 
   if (loading) {
