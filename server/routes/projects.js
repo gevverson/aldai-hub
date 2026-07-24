@@ -11,11 +11,22 @@ const router = express.Router();
 // Optional query params: ?status=critical | ?ward=kobujoi | ?category=health
 router.get('/', async (req, res, next) => {
   try {
-    const { status, ward, category } = req.query;
+    const { status, ward, county, constituency, category, year, fund } = req.query;
     const filter = {};
 
-    if (ward)     filter.ward     = new RegExp(`^${escapeRegex(ward)}$`, 'i');
-    if (category) filter.category = new RegExp(`^${escapeRegex(category)}$`, 'i');
+    if (ward)   filter.ward   = new RegExp(`^${escapeRegex(ward)}$`, 'i');
+    if (county) filter.county = new RegExp(`^${escapeRegex(county)}$`, 'i');
+
+    // ?countyWide=true returns County Executive projects, which belong to the
+    // county as a whole and deliberately carry no constituency.
+    if (req.query.countyWide === 'true') {
+      filter.constituency = null;
+    } else if (constituency) {
+      filter.constituency = new RegExp(`^${escapeRegex(constituency)}$`, 'i');
+    }
+    if (category)     filter.category     = new RegExp(`^${escapeRegex(category)}$`, 'i');
+    if (year)         filter.year         = year;
+    if (fund)         filter.fund         = new RegExp(`^${escapeRegex(fund)}$`, 'i');
 
     // ?status=critical → ghost projects + stalled
     if (status === 'critical') {

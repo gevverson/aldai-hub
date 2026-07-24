@@ -204,7 +204,7 @@ const VerificationMap = () => {
                       <h3 className="font-bold text-forest-900 text-sm leading-tight">{project.name}</h3>
                       <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${cfg.bg}`}>{cfg.label}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mb-1">📍 {project.ward} Ward · {project.fund} · Ksh {project.allocated?.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mb-1">📍 {project.ward ? `${project.ward} Ward` : project.constituency || project.county || 'Location not stated'} · {project.fund} · Ksh {project.allocated?.toLocaleString()}</p>
                     <p className="text-xs text-gray-700 italic mb-3 leading-relaxed">{project.auditNote}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-forest-700 font-semibold">

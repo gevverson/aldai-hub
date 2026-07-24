@@ -8,6 +8,9 @@ import ReportPage from './pages/ReportPage';
 import About from './pages/About';
 import Methodology from './pages/Methodology';
 import CountyFindings from './pages/CountyFindings';
+import Counties from './pages/Counties';
+import CountyPage from './pages/CountyPage';
+import ConstituencyPage from './pages/ConstituencyPage';
 
 // Lazy-load the map — Leaflet is heavy, so keep it out of the initial bundle
 // for faster first paint on low-bandwidth mobile connections.
@@ -32,6 +35,12 @@ function App() {
           <Route path="/report" element={<ReportPage />} />
           <Route path="/about" element={<About />} />
           <Route path="/county" element={<CountyFindings />} />
+
+          {/* County → Constituency → Projects drill-down */}
+          <Route path="/counties" element={<Counties />} />
+          <Route path="/county/:countyName" element={<CountyPage />} />
+          <Route path="/county/:countyName/county-wide" element={<ConstituencyPage countyWide />} />
+          <Route path="/constituency/:constituencyName" element={<ConstituencyPage />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/map" element={
             <Suspense fallback={<RouteFallback />}>

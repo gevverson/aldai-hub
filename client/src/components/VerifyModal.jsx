@@ -140,7 +140,7 @@ const VerifyModal = ({ project, onClose, onSuccess }) => {
       const formData = new FormData();
       formData.append('projectId',        String(project.id ?? project._id ?? ''));
       formData.append('projectName',      project.name);
-      formData.append('ward',             project.ward);
+      formData.append('ward',             project.ward || project.constituency || project.county || '');
       formData.append('lat',              String(coords.lat));
       formData.append('lng',              String(coords.lng));
       formData.append('locationVerified', String(locationVerified));
@@ -199,7 +199,7 @@ const VerifyModal = ({ project, onClose, onSuccess }) => {
             <p
               style={{ color: '#6B7280', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}
             >
-              {project.ward} Ward
+              {project.ward ? `${project.ward} Ward` : project.constituency || project.county || 'Location not stated'}
             </p>
           </div>
           <button
