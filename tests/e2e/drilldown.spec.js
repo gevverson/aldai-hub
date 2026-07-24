@@ -8,7 +8,10 @@ import { test, expect } from '@playwright/test';
  *   2. every project shown carries the audit report and page it came from.
  */
 
-const BASE = process.env.E2E_BASE_URL || 'http://127.0.0.1:4199';
+// Empty by default so gotos are relative and resolve against playwright.config
+// baseURL (BASE_URL) — the same convention as site.spec.js, so CI (port 4173)
+// and local runs both work. Set E2E_BASE_URL only to override explicitly.
+const BASE = process.env.E2E_BASE_URL || '';
 
 test.describe('geography drill-down', () => {
   test('county list shows counties with audited totals', async ({ page }) => {

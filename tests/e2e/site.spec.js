@@ -24,11 +24,13 @@ test.describe('API', () => {
     expect(body.db).toBe('connected');
   });
 
-  test('projects endpoint returns 21 seeded projects', async ({ request }) => {
+  test('projects endpoint returns the seeded national dataset', async ({ request }) => {
     const res = await request.get(`${SERVER}/api/projects`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    expect(body.data.length).toBe(21);
+    // Grows as more counties are ingested — assert a substantial floor, not an
+    // exact count, so adding a county never breaks this test.
+    expect(body.data.length).toBeGreaterThan(300);
   });
 
   test('wards endpoint returns all 6 wards', async ({ request }) => {
@@ -42,7 +44,7 @@ test.describe('API', () => {
     const res = await request.get(`${SERVER}/api/projects/stats`);
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    expect(body.data.projectsTracked).toBe(21);
+    expect(body.data.projectsTracked).toBeGreaterThan(300);
     expect(body.data.ghostProjects).toBeGreaterThanOrEqual(1);
   });
 
@@ -53,8 +55,10 @@ test.describe('API', () => {
     expect(['online', 'offline']).toContain(body.python_service);
   });
 
-  test('ward endpoint returns projects for each ward', async ({ request }) => {
-    for (const ward of ['Kobujoi', 'Terik', 'Kabwareng']) {
+  test('ward endpoint returns projects for wards with data', async ({ request }) => {
+    // Kobujoi (sub-county hospital) and Terik (Kapsengere) each retain a
+    // county-level project tagged to that ward after the national migration.
+    for (const ward of ['Kobujoi', 'Terik']) {
       const res = await request.get(`${SERVER}/api/projects/ward/${ward}`);
       expect(res.ok()).toBeTruthy();
       const body = await res.json();
@@ -154,25 +158,26 @@ test.describe('Navbar', () => {
   });
 });
 
-// ─── All 6 ward pages ────────────────────────────────────────────────────────
+// ─── Legacy ward pages (backward-compat behind the national drill-down) ───────
+// After the national migration, county-level projects retain a ward tag; the
+// canonical county → constituency flow is covered in drilldown.spec.js. Here we
+// smoke-test that a ward with data still renders its ledger and cited card(s).
 const WARDS = [
-  { slug: 'kabwareng',      projects: 1 },
-  { slug: 'terik',          projects: 2 },
-  { slug: 'kemeloi-maraba', projects: 2 },
-  { slug: 'kobujoi',        projects: 3 },
-  { slug: 'kaptumo-kaboi',  projects: 2 },
-  { slug: 'koyo-ndurio',    projects: 1 },
+  { slug: 'kobujoi', minProjects: 1 },
+  { slug: 'terik',   minProjects: 1 },
 ];
 
+// A stable per-card selector: every project card has a "Verify This Site" button.
+const cardButtons = (page) =>
+  page.locator('button').filter({ hasText: /Verify This Site/i });
+
 test.describe('Ward pages', () => {
-  for (const { slug, projects } of WARDS) {
-    test(`${slug} — loads with ${projects} project(s)`, async ({ page }) => {
-      // Use networkidle so we wait for the React fetch to complete
+  for (const { slug, minProjects } of WARDS) {
+    test(`${slug} — ledger loads with cited project(s)`, async ({ page }) => {
       await page.goto(`/ward/${slug}`, { waitUntil: 'networkidle', timeout: 40_000 });
       await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
         .toBeVisible({ timeout: 30_000 });
-      const cards = page.locator('text=Audit Finding');
-      await expect(cards).toHaveCount(projects, { timeout: 10_000 });
+      expect(await cardButtons(page).count()).toBeGreaterThanOrEqual(minProjects);
     });
   }
 
@@ -180,15 +185,15 @@ test.describe('Ward pages', () => {
     await page.goto('/ward/kobujoi', { waitUntil: 'networkidle', timeout: 40_000 });
     await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
       .toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('button', { hasText: 'Verify This Site' }))
-      .toHaveCount(3, { timeout: 10_000 });
+    expect(await cardButtons(page).count()).toBeGreaterThanOrEqual(1);
   });
 
   test('kobujoi — filter buttons work', async ({ page }) => {
     await page.goto('/ward/kobujoi', { waitUntil: 'networkidle', timeout: 40_000 });
     await expect(page.locator('h1').filter({ hasText: /Ledger/i }))
       .toBeVisible({ timeout: 30_000 });
-    for (const f of ['All Projects', 'Critical', 'Disputed', 'Verified Complete']) {
+    // Filter labels are shared with the national ProjectList component.
+    for (const f of ['All Projects', 'Critical', 'Disputed / Incomplete', 'Complete']) {
       const btn = page.locator('button').filter({ hasText: new RegExp(f, 'i') }).first();
       await expect(btn).toBeVisible();
       await btn.click();
@@ -261,9 +266,12 @@ test.describe('Map page', () => {
     await expect(page.locator('.leaflet-container')).toBeVisible();
   });
 
-  test('15 project markers are plotted', async ({ page }) => {
-    // 21 seeded projects minus 6 systemic findings that carry null coordinates.
-    await expect(page.locator('path.leaflet-interactive')).toHaveCount(15);
+  test('project markers are plotted', async ({ page }) => {
+    // Only projects that carry coordinates are plotted (currently the
+    // geolocated county projects). Assert markers exist rather than an exact
+    // count, which changes as constituencies are geocoded.
+    await expect(page.locator('path.leaflet-interactive').first()).toBeVisible();
+    expect(await page.locator('path.leaflet-interactive').count()).toBeGreaterThanOrEqual(1);
   });
 
   test('filter buttons are clickable', async ({ page }) => {
