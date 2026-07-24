@@ -63,7 +63,12 @@ const ProjectCard = ({ project }) => {
                 )}
               </div>
               <p className="text-sm font-medium" style={{ color: '#6B7280' }}>
-                <span style={{ color: '#D97706' }}>{project.ward}</span> · {project.fund} Fund · {project.year}
+                {/* OAG audits at constituency level; ward is only shown when a
+                    source actually states it. Fall back so the line never
+                    renders an empty or "null" location. */}
+                <span style={{ color: '#D97706' }}>
+                  {project.ward || project.constituency || project.county || 'Location not stated'}
+                </span> · {project.fund} Fund · {project.year}
               </p>
             </div>
             <div className="text-left md:text-right shrink-0">

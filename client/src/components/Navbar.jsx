@@ -4,7 +4,8 @@ import AlertTicker from './AlertTicker';
 
 const NAV_LINKS = [
   { to: '/',       label: 'Projects', sw: 'Miradi',  exact: true },
-  { to: '/county', label: 'County',   sw: 'Kaunti' },
+  { to: '/counties', label: 'Counties', sw: 'Kaunti' },
+  { to: '/county', label: 'Findings', sw: 'Matokeo' },
   { to: '/map',    label: 'Map',      sw: 'Mapa' },
   { to: '/report', label: 'Report',   sw: 'Ripoti' },
   { to: '/audit',  label: 'Audit AI', sw: 'Ukaguzi' },

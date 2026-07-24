@@ -20,9 +20,14 @@ const AlertTicker = () => {
   useEffect(() => {
     const merge = (liveData) => {
       if (!Array.isArray(liveData) || liveData.length === 0) return;
-      const liveAlerts = liveData.map(
-        (p) => `🚨 LIVE: ${p.name} — ${p.ward} Ward — ${p.communityStatus || p.status}`
-      );
+      // Prefer the most specific location the source actually gives:
+      // ward → constituency → county. NG-CDF findings have no ward.
+      const liveAlerts = liveData.map((p) => {
+        const place = p.ward
+          ? `${p.ward} Ward`
+          : p.constituency || p.county || 'Location not stated';
+        return `🚨 LIVE: ${p.name} — ${place} — ${p.communityStatus || p.status}`;
+      });
       setAlerts([...liveAlerts, ...STATIC_ALERTS]);
     };
 

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 
 import connectDB          from './db.js';
 import projectsRouter     from './routes/projects.js';
+import geographyRouter    from './routes/geography.js';
 import reportsRouter      from './routes/reports.js';
 import auditRouter, { validateAuditConfig } from './routes/audit.js';
 import verificationsRouter from './routes/verifications.js';
@@ -131,6 +132,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── API Routes ────────────────────────────────────────────────
 app.use('/api/projects',       projectsRouter);
+app.use('/api/geography',      geographyRouter);
 app.use('/api/reports',        reportsRouter);
 app.use('/api/audit',          auditRouter);
 app.use('/api/verifications',  verificationsRouter);
