@@ -96,6 +96,26 @@ news), each labelled for what it is — not deletion.
 `OAG_SEED_TEXT` should carry **correct per-figure attributions** (or be retired)
 so retrieval never presents a Senator's estimate as an OAG audit finding.
 
+### 3a. Verification against FY2023/24 & FY2024/25 (2026-07-24)
+
+The Nandi County Executive + Assembly reports for FY2022/23–FY2024/25 were
+retrieved from the Parliament (Bunge) library and every curated story checked
+against them. **The curated data held up.** Citations were upgraded to
+report + section + page, and two figures reconciled to the primary source:
+
+| Story | Result | Precise citation now in seed |
+|---|---|---|
+| Kapsengere Hospital Phase II — Ksh 9,954,900 | ✅ exact match (Terik Ward, ramp defective, abandoned) | Exec FY2023/24 §3.6 p56 |
+| Kobujoi Sub-County Hospital — Ksh 3,292,946 | ✅ exact match (undocumented payments) | Exec FY2023/24 §3.7 p56 |
+| Kabiyet Dairy Creamery — Ksh 621M | ✅ corroborated — multi-phase (Phase III Ksh 64.75M) + Senator cumulative | Exec FY2023/24 §3.4 p55 + Cherargei |
+| Manual Payroll / Ghost Workers — Ksh 3.3B | ✅ ghost workers confirmed; Ksh 260.3M outside IPPD; payroll Ksh 3.37B | Exec FY2023/24 §1.6 p45 + FY2024/25 p35 |
+| Kapsabet Mother & Baby Unit | 🔧 figure reconciled 208.8M → **contract Ksh 409,813,441** (paid 142.5M) | Exec FY2023/24 §3.8 p57 |
+| Pending Bills | 🔧 figure reconciled 985.1M → **Ksh 782,535,628** | Exec FY2024/25 p19 |
+| Chepterwai Sub-County Hospital | ✅ failed to submit FY2023/24 financials | Exec FY2023/24 p40 |
+| County Assembly (56M / 77M / 54M) | ⚠️ unconfirmed — not matched (OCR noise; FY24/25 Assembly report not yet read) | left as-is, flagged |
+
+All five reports added to `ai-service/documents/` (corpus now 46 PDFs).
+
 ---
 
 ## 4. How to reproduce / regenerate
