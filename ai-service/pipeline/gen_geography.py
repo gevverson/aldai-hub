@@ -64,10 +64,13 @@ CODES = {n: i+1 for i, n in enumerate([
     "Siaya","Kisumu","Homa Bay","Migori","Kisii","Nyamira","Nairobi",
 ])}
 
-# Constituencies with OAG project data actually ingested and verified.
+# Constituencies with OAG per-project data actually ingested and verified.
+# Coverage is at CONSTITUENCY level: many counties publish narrative-only
+# NG-CDF reports (no project register), so a county may be only partly covered.
 COVERED = {
     "Nandi": {"Aldai","Chesumei","Emgwen","Mosop","Nandi Hills"},
     "Uasin Gishu": {"Ainabkoi","Kapseret","Kesses","Soy"},
+    "Mombasa": {"Changamwe","Kisauni"},
 }
 
 n_counties = len(DATA)

@@ -64,12 +64,25 @@ CAT_RULES = [
 ]
 
 STATUS_RULES = [
-    ("GHOST PROJECT", r"did not exist|does not exist|not exist|no structure|empty (field|plot)|not (yet )?(started|commenced)|works? (had )?not (yet )?(started|commenced|begun)|no (works?|construction|materials?) on"),
+    # GHOST = the WHOLE project is physically absent / never begun. Kept strict:
+    # "did not exist", "no works done at all", "construction not started + no
+    # materials on site". Component-level "X had not started" is NOT ghost — that
+    # is caught by the PARTIAL_WORK guard below and downgraded to incomplete.
+    ("GHOST PROJECT", r"did not exist|does not (physically )?exist|does not exist|no structure|empty (field|plot)|nothing (on site|was done)|no works? (had been|were|was) done|no (visible )?works?.*(on site|on the ground)|construction works not started|not commenced.*(no|nothing)|works? had not (started|commenced|begun).*(materials? not|no materials?)"),
     ("STALLED", r"\bstalled\b|\bstall\b|abandon|not on[- ]?site|no (meaningful )?progress|contractor (had )?(left|vacated|not on)"),
-    ("INCOMPLETE", r"incomplete|not (yet )?complete|not done|not (in )?use|still requires|additional funding|pending|delay|ongoing"),
+    ("INCOMPLETE", r"incomplete|not (yet )?complete|not done|not (in )?use|still requires|additional funding|pending|delay|ongoing|had not (started|been done)|not (yet )?(started|constructed|finished)"),
     ("DISPUTED", r"crack|leak|substandard|sub-standard|defect|poor (paint|work|workmanship)|not neatly|no certificate|no (log ?book|title)|ownership .* not|(documents|records|log ?book) (not|were not|missing|not availed|not provided)|not labelled|not as per|bill of quantit|no clear description|inequality|procurement records"),
     ("COMPLETE", r"complete and in use|project complete|completed and|works? complete|installed and in use|delivered and (are )?in use|complete\.?\s*$"),
 ]
+
+# Evidence that SOME physical construction exists — a project showing any of
+# these cannot honestly be called a ghost, only incomplete/stalled/disputed.
+PARTIAL_WORK = re.compile(
+    r"plaster|foundation|superstructure|walling|\bwalls?\b|slab|roof(ed|ing)|"
+    r"beam|column|pillar|lintel|floor(ing|ed)?|painted|window|door|ground floor|"
+    r"\d+\s*%|per\s?cent|percent|works? done|erected|in use|classrooms? (done|constructed|complete)",
+    re.I,
+)
 
 AMOUNT_CELL = re.compile(r"^[\d,]+(?:\.\d+)?$")
 
@@ -80,6 +93,15 @@ def classify(text, rules, default):
         if re.search(pat, t):
             return label
     return default
+
+
+def classify_status(remark):
+    """Status, but never GHOST when the source shows partial construction."""
+    label = classify(remark, STATUS_RULES, "REPORTED — SEE NOTE")
+    if label == "GHOST PROJECT" and PARTIAL_WORK.search(remark):
+        # Some works exist — re-classify against everything except GHOST.
+        label = classify(remark, STATUS_RULES[1:], "INCOMPLETE")
+    return label
 
 
 def constituency_from_filename(name):
@@ -94,9 +116,17 @@ def fy_from_filename(name):
     return f"{m.group(1)}/{m.group(2)}" if m else "unknown"
 
 
+YEAR_CELL = re.compile(r"^\d{4}\s*[/-]\s*\d{2,4}$|^\d{4}$")
+
+
 def parse_row(cells):
     """Locate the amount column; everything before is identity, after is remark."""
     body = cells[1:] if re.match(r"^\d{1,3}[.)]?$", cells[0]) else cells
+    # Some counties (e.g. Mombasa) put a financial-year column before the
+    # project name — "1 | 2017/2018 | Airport Secondary School | …". Drop a
+    # leading year cell so the name is not read as the year.
+    if body and YEAR_CELL.match(body[0].strip()):
+        body = body[1:]
     # Match the cell as-is: a cell like "7 10000000" is two collided columns,
     # and collapsing the space would invent a number that is not in the report.
     idx = next((i for i, c in enumerate(body) if AMOUNT_CELL.fullmatch(c.strip())), None)
@@ -142,7 +172,7 @@ def build(county, raw_path):
             if is_county_doc and activity:
                 name, activity = activity, f"Contractor: {name}"
             status = (
-                classify(remark, STATUS_RULES, "REPORTED — SEE NOTE")
+                classify_status(remark)
                 if remark
                 else "REPORTED — NO VERIFICATION RESULT"
             )
@@ -166,12 +196,23 @@ def build(county, raw_path):
     return out
 
 
+SLUG_TO_COUNTY = {
+    "uasin_gishu": "Uasin Gishu", "kericho": "Kericho", "kiambu": "Kiambu",
+    "mombasa": "Mombasa", "kisumu": "Kisumu", "kakamega": "Kakamega",
+}
+
 if __name__ == "__main__":
-    targets = [
-        ("Nandi", ROOT / "projects_raw.json"),
-        ("Uasin Gishu", ROOT / "counties/uasin_gishu/projects_raw.json"),
-        ("Kericho", ROOT / "counties/kericho/projects_raw.json"),
-    ]
+    # Nandi lives at the root; every other county is a counties/<slug> dir with
+    # its own projects_raw.json. Auto-discover so adding a county needs no edit.
+    targets = [("Nandi", ROOT / "projects_raw.json")]
+    counties_dir = ROOT / "counties"
+    if counties_dir.exists():
+        for sub in sorted(counties_dir.iterdir()):
+            raw = sub / "projects_raw.json"
+            if raw.exists():
+                name = SLUG_TO_COUNTY.get(sub.name, sub.name.replace("_", " ").title())
+                targets.append((name, raw))
+
     allrecs = []
     for county, path in targets:
         if not Path(path).exists():
@@ -180,6 +221,26 @@ if __name__ == "__main__":
         recs = build(county, path)
         allrecs.extend(recs)
         print(f"{county:<14} {len(recs):>4} projects")
+
+    # Dedupe: the same project can appear in both an "all projects" appendix and
+    # an "unsatisfactory projects" appendix of the same report. Keep one record
+    # per (county, constituency, name, amount), preferring the one that carries a
+    # real physical-verification result over a bare "reported" row.
+    STATUS_RANK = {
+        "GHOST PROJECT": 6, "STALLED": 5, "DISPUTED": 4, "INCOMPLETE": 3,
+        "COMPLETE": 2, "REPORTED — SEE NOTE": 1, "REPORTED — NO VERIFICATION RESULT": 0,
+    }
+    best = {}
+    for r in allrecs:
+        key = (r["county"], r["constituency"], re.sub(r"\s+", " ", r["name"].lower()).strip(), r["allocated"])
+        cur = best.get(key)
+        if cur is None or STATUS_RANK.get(r["communityStatus"], 0) > STATUS_RANK.get(cur["communityStatus"], 0):
+            best[key] = r
+    deduped = list(best.values())
+    dropped = len(allrecs) - len(deduped)
+    if dropped:
+        print(f"\ndeduped {dropped} duplicate rows -> {len(deduped)}")
+    allrecs = deduped
 
     (ROOT / "national_projects.json").write_text(json.dumps(allrecs, indent=2, ensure_ascii=False))
     from collections import Counter

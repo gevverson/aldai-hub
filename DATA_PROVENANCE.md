@@ -96,6 +96,34 @@ news), each labelled for what it is — not deletion.
 `OAG_SEED_TEXT` should carry **correct per-figure attributions** (or be retired)
 so retrieval never presents a Senator's estimate as an OAG audit finding.
 
+### 3b. National expansion — regional batch (2026-07-25)
+
+Ingested four counties spread across regions to demonstrate national reach.
+The result is an honest map of OAG data availability:
+
+| County | Region | Result |
+|---|---|---|
+| **Mombasa** | Coast | ✅ 13 verified projects (Changamwe, Kisauni). Other 4 constituencies narrative-only. |
+| Kiambu | Central | ⚠️ NG-CDF reports narrative-only — no per-project register. Not covered. |
+| Kisumu | Nyanza | ⚠️ Narrative-only. Not covered. |
+| Kakamega | Western | ⚠️ Appendices are status-summary tables, not project lists. Not covered. |
+
+**Finding:** the per-project verification appendix is **not** universal in OAG
+NG-CDF reports. Many counties publish narrative-only audits. We only mark a
+constituency covered where a genuine project register exists — never fabricate.
+
+**Two data-integrity fixes applied to the whole pipeline this batch:**
+- **False-ghost guard.** The classifier was calling partially-built projects
+  "GHOST PROJECT" when a *component* (e.g. "roof top had not started") was
+  incomplete — e.g. Mwembelegeza Secondary (Kisauni), whose walls were plastered.
+  Added a PARTIAL_WORK guard: nothing is a ghost if the source shows any
+  construction. Ghost count fell 13 → 4, all genuine ("did not exist" / "works
+  not started, no materials on site"). This also corrected the previously-live
+  Nandi/Uasin Gishu data.
+- **Deduplication.** A project can appear in both the "all projects" and
+  "unsatisfactory projects" appendix of one report; 26 duplicate rows removed,
+  keeping the record with the real verification result.
+
 ### 3a. Verification against FY2023/24 & FY2024/25 (2026-07-24)
 
 The Nandi County Executive + Assembly reports for FY2022/23–FY2024/25 were

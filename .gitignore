@@ -45,3 +45,4 @@ echo "Done"
 # Regenerable vector store — rebuild with ai-service/ingest_all.py
 ai-service/chroma_db/
 server/data/seed.js.pre-merge.bak
+server/data/seed.js.pre-mombasa.bak

@@ -19,9 +19,9 @@ export const counties = [
     name: "Mombasa",
     code: 1,
     constituencies: [
-      { name: "Changamwe", covered: false },
+      { name: "Changamwe", covered: true  },
       { name: "Jomvu", covered: false },
-      { name: "Kisauni", covered: false },
+      { name: "Kisauni", covered: true  },
       { name: "Nyali", covered: false },
       { name: "Likoni", covered: false },
       { name: "Mvita", covered: false },
