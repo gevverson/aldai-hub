@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import VerifyModal from './VerifyModal';
+import { toneOf, statusTone } from '../lib/status';
 
 const ProjectCard = ({ project }) => {
   const [verificationCount, setVerificationCount] = useState(0);
@@ -19,8 +20,12 @@ const ProjectCard = ({ project }) => {
     switch(status) {
       case 'VERIFIED COMPLETE':
         return <span className="badge bg-alert-green/10 text-alert-green border border-alert-green/20">✅ VERIFIED COMPLETE</span>;
+      case 'COMPLETE':
+        return <span className="badge bg-alert-green/10 text-alert-green border border-alert-green/20">✅ COMPLETE</span>;
       case 'DISPUTED':
         return <span className="badge bg-amber-500/10 text-amber-600 border border-amber-500/20">⚠️ DISPUTED</span>;
+      case 'INCOMPLETE':
+        return <span className="badge bg-amber-500/10 text-amber-600 border border-amber-500/20">🚧 INCOMPLETE</span>;
       case 'GHOST PROJECT':
         return <span className="badge bg-alert-red text-white border border-red-700 animate-pulse">🚨 GHOST PROJECT</span>;
       case 'STALLED':
@@ -32,9 +37,12 @@ const ProjectCard = ({ project }) => {
       case 'IRREGULAR':
         return <span className="badge bg-red-500/10 text-red-400 border border-red-500/20">🚩 IRREGULAR</span>;
       default:
-        return <span className="badge bg-gray-100 text-gray-800 border border-gray-200">{status}</span>;
+        // e.g. "REPORTED — SEE NOTE" — neutral, no false alarm.
+        return <span className="badge bg-gray-700/20 text-gray-300 border border-gray-600/30">{status}</span>;
     }
   };
+
+  const tone = toneOf(project.communityStatus);
 
   const formatKsh = (num) =>
     new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(num);
@@ -45,8 +53,8 @@ const ProjectCard = ({ project }) => {
         className="rounded-2xl mb-4 overflow-hidden transition-all duration-300 border border-[#1F2937] hover:border-amber-500/50 hover:-translate-y-[2px] hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
         style={{ background: '#111827' }}
       >
-        {/* Top accent strip */}
-        <div className="h-1 w-full" style={{ background: project.communityStatus === 'GHOST PROJECT' || project.communityStatus === 'IRREGULAR' ? '#DC2626' : project.communityStatus === 'STALLED' || project.communityStatus === 'ABANDONED' ? '#D97706' : project.communityStatus === 'DISPUTED' ? '#F59E0B' : '#1B4332' }} />
+        {/* Top accent strip — colour tracks severity, green when complete */}
+        <div className="h-1 w-full" style={{ background: tone.accent }} />
 
         <div className="p-5">
           <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-4 pb-4" style={{ borderBottom: '1px solid #1F2937' }}>
@@ -88,13 +96,20 @@ const ProjectCard = ({ project }) => {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.15)' }}>
+          <div className="p-4 rounded-xl" style={{ background: tone.bg, border: `1px solid ${tone.border}` }}>
             <div className="flex items-start gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#DC2626' }}>
-                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-              </svg>
+              {statusTone(project.communityStatus) === 'complete' ? (
+                // Calm check for a project the auditor found complete.
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: tone.icon }}>
+                  <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: tone.icon }}>
+                  <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                </svg>
+              )}
               <div>
-                <p className="text-sm font-semibold uppercase tracking-wider mb-1" style={{ color: '#F87171' }}>Audit Finding</p>
+                <p className="text-sm font-semibold uppercase tracking-wider mb-1" style={{ color: tone.label }}>{tone.title}</p>
                 <p className="text-sm leading-relaxed" style={{ color: '#D1D5DB' }}>{project.auditNote}</p>
                 {project.source && (
                   <p className="text-xs mt-2" style={{ color: '#6B7280' }}>

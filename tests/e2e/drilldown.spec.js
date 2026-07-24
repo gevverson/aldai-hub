@@ -45,6 +45,23 @@ test.describe('geography drill-down', () => {
     await expect(page.getByText(/Kimaren/i).first()).toBeVisible();
   });
 
+  test('completed projects read as a calm note, not a red audit finding', async ({ page }) => {
+    await page.goto(`${BASE}/constituency/aldai`);
+    await expect(page.getByRole('heading', { name: /Tracked Projects/i })).toBeVisible();
+    // The cry-wolf fix: a COMPLETE project shows "Auditor's Note", never "Audit Finding".
+    await expect(page.getByText(/Auditor.s Note/i).first()).toBeVisible();
+  });
+
+  test('the Complete filter returns projects (not a broken zero)', async ({ page }) => {
+    await page.goto(`${BASE}/constituency/aldai`);
+    const completeBtn = page.getByRole('button', { name: /^Complete \((\d+)\)/ });
+    await expect(completeBtn).toBeVisible();
+    // It must not be the old broken "(0)".
+    await expect(completeBtn).not.toHaveText(/\(0\)/);
+    await completeBtn.click();
+    await expect(page.getByText(/No projects match the selected filter/i)).toHaveCount(0);
+  });
+
   test('unknown county fails gracefully instead of crashing', async ({ page }) => {
     await page.goto(`${BASE}/county/nairobi`);
     await expect(page.getByRole('heading', { name: /not covered yet/i })).toBeVisible();

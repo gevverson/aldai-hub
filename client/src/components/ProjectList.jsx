@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ProjectCard from './ProjectCard';
+import { isCritical, isComplete, isConcern } from '../lib/status';
 
 const ProjectList = ({ projects }) => {
   const [filter, setFilter] = useState('ALL');
@@ -12,13 +13,14 @@ const ProjectList = ({ projects }) => {
     );
   }
 
-  const filteredProjects = projects.filter(p => {
-    if (filter === 'ALL') return true;
-    if (filter === 'CRITICAL') return ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'MISALLOCATED', 'IRREGULAR'].includes(p.communityStatus);
-    if (filter === 'DISPUTED') return p.communityStatus === 'DISPUTED';
-    if (filter === 'VERIFIED') return p.communityStatus === 'VERIFIED COMPLETE';
-    return true;
-  });
+  const matches = {
+    ALL:      () => true,
+    CRITICAL: (p) => isCritical(p.communityStatus),
+    CONCERN:  (p) => isConcern(p.communityStatus),
+    VERIFIED: (p) => isComplete(p.communityStatus),
+  };
+  const count = (key) => projects.filter(matches[key]).length;
+  const filteredProjects = projects.filter(matches[filter] || matches.ALL);
 
   return (
     <div>
@@ -36,21 +38,21 @@ const ProjectList = ({ projects }) => {
           className="px-4 py-2 rounded-full text-sm font-medium transition-all"
           style={filter === 'CRITICAL' ? { background: '#DC2626', color: '#fff', border: '1px solid #DC2626' } : { background: 'transparent', color: '#F87171', border: '1px solid rgba(220,38,38,0.3)' }}
         >
-          Critical / Stalled ({projects.filter(p => ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'MISALLOCATED', 'IRREGULAR'].includes(p.communityStatus)).length})
+          Critical / Stalled ({count('CRITICAL')})
         </button>
         <button
-          onClick={() => setFilter('DISPUTED')}
+          onClick={() => setFilter('CONCERN')}
           className="px-4 py-2 rounded-full text-sm font-medium transition-all"
-          style={filter === 'DISPUTED' ? { background: '#D97706', color: '#0A0A0A', border: '1px solid #D97706' } : { background: 'transparent', color: '#FCD34D', border: '1px solid rgba(217,119,6,0.3)' }}
+          style={filter === 'CONCERN' ? { background: '#D97706', color: '#0A0A0A', border: '1px solid #D97706' } : { background: 'transparent', color: '#FCD34D', border: '1px solid rgba(217,119,6,0.3)' }}
         >
-          Disputed ({projects.filter(p => p.communityStatus === 'DISPUTED').length})
+          Disputed / Incomplete ({count('CONCERN')})
         </button>
         <button
           onClick={() => setFilter('VERIFIED')}
           className="px-4 py-2 rounded-full text-sm font-medium transition-all"
           style={filter === 'VERIFIED' ? { background: '#16A34A', color: '#fff', border: '1px solid #16A34A' } : { background: 'transparent', color: '#4ADE80', border: '1px solid rgba(22,163,74,0.3)' }}
         >
-          Verified Complete ({projects.filter(p => p.communityStatus === 'VERIFIED COMPLETE').length})
+          Complete ({count('VERIFIED')})
         </button>
       </div>
 

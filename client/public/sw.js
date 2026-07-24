@@ -12,7 +12,7 @@
  * always go straight to the network.
  */
 
-const VERSION      = 'v2';
+const VERSION      = 'v3';   // bump on each release to purge stale shell/data/asset caches
 const SHELL_CACHE  = `mym-shell-${VERSION}`;
 const DATA_CACHE   = `mym-data-${VERSION}`;
 const ASSET_CACHE  = `mym-assets-${VERSION}`;
