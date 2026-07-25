@@ -68,6 +68,21 @@ test.describe('geography drill-down', () => {
     await expect(page.getByText(/No projects match the selected filter/i)).toHaveCount(0);
   });
 
+  test('narrative-only constituency shows cited audit findings', async ({ page }) => {
+    // Gatundu North (Kiambu) has no project register but real audit findings.
+    await page.goto(`${BASE}/constituency/gatundu%20north`);
+    await expect(page.getByRole('heading', { name: /Audit Findings/i })).toBeVisible();
+    // An opinion badge and a page citation must be present.
+    await expect(page.getByText(/Qualified Opinion|Adverse Opinion|Disclaimer/i).first()).toBeVisible();
+    await expect(page.getByText(/OAG .*NG-CDF Audit FY\d{4}\/\d{4}, p\d+/).first()).toBeVisible();
+  });
+
+  test('counties page surfaces findings-only counties as a distinct tier', async ({ page }) => {
+    await page.goto(`${BASE}/counties`);
+    await expect(page.getByRole('heading', { name: /Audit findings available/i })).toBeVisible();
+    await expect(page.getByText(/Kiambu/).first()).toBeVisible();
+  });
+
   test('unknown county fails gracefully instead of crashing', async ({ page }) => {
     // A name that is not one of Kenya's 47 counties.
     await page.goto(`${BASE}/counties/atlantis`);

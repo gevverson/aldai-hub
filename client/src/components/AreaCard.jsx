@@ -8,7 +8,9 @@ import { formatKsh, HEALTH, healthOf, flaggedPct } from '../lib/geo';
  * misleading zero.
  */
 const AreaCard = ({ area, to, kicker }) => {
-  const hasData = area.projectCount > 0;
+  const hasProjects = area.projectCount > 0;
+  const findingsOnly = !hasProjects && (area.findingCount || 0) > 0;
+  const hasData = hasProjects || findingsOnly;   // clickable if either exists
   const health = HEALTH[healthOf(area)];
   const pct = flaggedPct(area);
 
@@ -59,7 +61,7 @@ const AreaCard = ({ area, to, kicker }) => {
           )}
         </div>
 
-        {hasData ? (
+        {hasProjects ? (
           <>
             <div className="flex gap-4">
               <div>
@@ -115,6 +117,18 @@ const AreaCard = ({ area, to, kicker }) => {
               )}
             </div>
           </>
+        ) : findingsOnly ? (
+          <div>
+            <p className="font-mono-jet font-bold" style={{ color: '#D97706', fontSize: '22px' }}>
+              {area.findingCount}
+            </p>
+            <p className="uppercase tracking-wider" style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}>
+              Audit findings
+            </p>
+            <p className="mt-2" style={{ color: '#9CA3AF', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+              Auditor-General findings on record. No project register published yet.
+            </p>
+          </div>
         ) : (
           <p
             style={{ color: '#4B5563', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}
@@ -128,16 +142,16 @@ const AreaCard = ({ area, to, kicker }) => {
           className="flex items-center gap-2 px-3 py-2 rounded-xl mt-auto"
           style={{ background: '#0A0A0A' }}
         >
-          <span style={{ fontSize: '13px' }}>{health.icon}</span>
+          <span style={{ fontSize: '13px' }}>{findingsOnly ? '📄' : health.icon}</span>
           <div>
             <p
               className="font-bold"
               style={{ color: hasData ? '#F9FAFB' : '#6B7280', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}
             >
-              {health.label}
+              {findingsOnly ? 'Audit Findings' : health.label}
             </p>
             <p style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}>
-              {health.sw}
+              {findingsOnly ? 'Matokeo ya Ukaguzi' : health.sw}
             </p>
           </div>
           {hasData && (

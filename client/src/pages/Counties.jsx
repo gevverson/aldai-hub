@@ -120,10 +120,12 @@ const Counties = () => {
         )}
 
         {!loading && !error && (() => {
-          // Lead with counties that have live audit data; list the rest as a
-          // compact "coming soon" grid so the real evidence is never buried.
+          // Three tiers: counties with a project register, counties with audit
+          // findings only (still real, cited data), and the rest as compact
+          // "coming soon" chips — so real evidence is never buried.
           const live = counties.filter((c) => c.projectCount > 0);
-          const soon = counties.filter((c) => c.projectCount === 0);
+          const reviewed = counties.filter((c) => c.projectCount === 0 && (c.findingCount || 0) > 0);
+          const soon = counties.filter((c) => c.projectCount === 0 && (c.findingCount || 0) === 0);
           return (
             <>
               {live.length > 0 && (
@@ -136,6 +138,28 @@ const Counties = () => {
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
                     {live.map((county) => (
+                      <AreaCard
+                        key={county.name}
+                        area={county}
+                        to={`/counties/${slug(county.name)}`}
+                        kicker={`${county.constituencies.length} constituencies`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {reviewed.length > 0 && (
+                <>
+                  <h2 className="font-display text-white mb-1" style={{ fontSize: '22px' }}>
+                    Audit findings available
+                  </h2>
+                  <p className="mb-5" style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
+                    Counties whose Auditor-General reports raise findings but publish no
+                    project register — real, cited audit data, no project map yet.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
+                    {reviewed.map((county) => (
                       <AreaCard
                         key={county.name}
                         area={county}

@@ -96,6 +96,23 @@ news), each labelled for what it is — not deletion.
 `OAG_SEED_TEXT` should carry **correct per-figure attributions** (or be retired)
 so retrieval never presents a Senator's estimate as an OAG audit finding.
 
+### 3c. Constituency-level audit findings layer (2026-07-25)
+
+Not every OAG NG-CDF report has a project register, but every one carries an
+**audit opinion** and **basis-for-qualification findings**. These are ingested
+as a separate `Finding` model (never dressed up as physical projects) so the
+map shows real, cited audit data everywhere a report exists.
+
+- **1,658 findings across 54 constituencies in 7 counties**, each cited to
+  report + page (`build_findings.py`, reusing extract.py).
+- Counties without a project register (Kiambu, Kisumu, Kakamega, Kericho) now
+  surface under an "Audit findings available" tier instead of "coming soon".
+- Coverage across all major regions: Coast (Mombasa), Rift (Nandi, Uasin Gishu,
+  Kericho), Central (Kiambu), Nyanza (Kisumu), Western (Kakamega).
+- The prominent figure on a finding card is labelled "Figure cited", not
+  "amount queried" — the first amount in a finding is not always the specific
+  queried sum, and the verbatim summary carries the full context.
+
 ### 3b. National expansion — regional batch (2026-07-25)
 
 Ingested four counties spread across regions to demonstrate national reach.

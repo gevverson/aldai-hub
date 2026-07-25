@@ -5,12 +5,19 @@
  * Run: node seed_db.js
  */
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import connectDB, { disconnectDB } from './db.js';
 import Project from './models/Project.js';
+import Finding from './models/Finding.js';
 import { projects, globalStats } from './data/seed.js';
 
 dotenv.config();
+
+const __dir = dirname(fileURLToPath(import.meta.url));
+const findings = JSON.parse(readFileSync(join(__dir, 'data', 'findings.json'), 'utf8'));
 
 const formatKsh = (n) => `Ksh ${(n / 1_000_000).toFixed(1)}M`;
 
@@ -23,9 +30,15 @@ const seed = async () => {
   const deleted = await Project.deleteMany({});
   console.log(`   🗑️  Cleared ${deleted.deletedCount} existing projects`);
 
-  // Insert all 14 projects
+  // Insert all projects
   const inserted = await Project.insertMany(projects);
-  console.log(`   ✅ Inserted ${inserted.length} projects\n`);
+  console.log(`   ✅ Inserted ${inserted.length} projects`);
+
+  // Wipe + re-seed constituency-level audit findings
+  const delF = await Finding.deleteMany({});
+  const insF = await Finding.insertMany(findings);
+  console.log(`   🗑️  Cleared ${delF.deletedCount} findings`);
+  console.log(`   ✅ Inserted ${insF.length} audit findings\n`);
 
   // Print summary by communityStatus
   const statusGroups = inserted.reduce((acc, p) => {

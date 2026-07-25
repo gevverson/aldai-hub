@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ProjectList from '../components/ProjectList';
+import FindingsList from '../components/FindingsList';
 import { formatKsh, HEALTH, healthOf, slug } from '../lib/geo';
 
 const NEGATIVE = ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'INCOMPLETE', 'DISPUTED', 'MISALLOCATED'];
@@ -29,6 +30,7 @@ const BackLink = ({ to, children }) => (
 const ConstituencyPage = ({ countyWide = false }) => {
   const { constituencyName, countyName } = useParams();
   const [projects, setProjects] = useState([]);
+  const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -39,15 +41,22 @@ const ConstituencyPage = ({ countyWide = false }) => {
     setLoading(true);
     setError(null);
 
-    const url = countyWide
+    const projUrl = countyWide
       ? `/api/projects?county=${encodeURIComponent(countyName)}&countyWide=true`
       : `/api/projects?constituency=${encodeURIComponent(constituencyName)}`;
+    // County-wide (Executive) view has no constituency findings.
+    const findUrl = countyWide
+      ? null
+      : `/api/findings?constituency=${encodeURIComponent(constituencyName)}`;
 
-    fetch(url)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Could not load projects'))))
-      .then((json) => {
+    Promise.all([
+      fetch(projUrl).then((r) => (r.ok ? r.json() : Promise.reject(new Error('Could not load projects')))),
+      findUrl ? fetch(findUrl).then((r) => (r.ok ? r.json() : { data: [] })) : Promise.resolve({ data: [] }),
+    ])
+      .then(([proj, find]) => {
         if (!alive) return;
-        setProjects(Array.isArray(json?.data) ? json.data : []);
+        setProjects(Array.isArray(proj?.data) ? proj.data : []);
+        setFindings(Array.isArray(find?.data) ? find.data : []);
         setLoading(false);
       })
       .catch((e) => {
@@ -141,19 +150,19 @@ const ConstituencyPage = ({ countyWide = false }) => {
           </div>
         )}
 
-        {!error && stats.projectCount === 0 && (
+        {!error && stats.projectCount === 0 && findings.length === 0 && (
           <div
             className="rounded-2xl p-10 text-center"
             style={{ background: '#111827', border: '1px solid #1F2937' }}
           >
             <div className="text-5xl mb-4">📂</div>
             <h2 className="font-display text-white mb-2" style={{ fontSize: '22px' }}>
-              No Published Project Register Yet
+              No Audit Data Ingested Yet
             </h2>
             <p style={{ color: '#6B7280', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7, maxWidth: '520px', margin: '0 auto 24px' }}>
-              The Auditor-General has published reports for this area, but they do not
-              include a project-by-project verification table. We show only what the
-              source documents actually contain.
+              We have not yet ingested Auditor-General reports for this area. Coverage
+              grows as official reports are processed — we show only what the source
+              documents actually contain.
             </p>
             <Link
               to="/methodology"
@@ -162,6 +171,18 @@ const ConstituencyPage = ({ countyWide = false }) => {
             >
               How we verify →
             </Link>
+          </div>
+        )}
+
+        {/* Narrative-only constituency: findings are the primary content. */}
+        {!error && stats.projectCount === 0 && findings.length > 0 && (
+          <div className="mb-8 rounded-2xl p-5" style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)' }}>
+            <p style={{ color: '#FCD34D', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+              The Auditor-General's NG-CDF reports for this constituency are narrative —
+              they raise financial and compliance findings but do not publish a
+              project-by-project register. Those findings are shown below, each cited to
+              its report and page.
+            </p>
           </div>
         )}
 
@@ -203,6 +224,19 @@ const ConstituencyPage = ({ countyWide = false }) => {
 
             <ProjectList projects={projects} />
           </>
+        )}
+
+        {!error && findings.length > 0 && (
+          <div className={stats.projectCount > 0 ? 'mt-14' : ''}>
+            <div className="mb-6">
+              <h2 className="text-2xl font-display font-bold text-white">Audit Findings</h2>
+              <p className="mt-1" style={{ color: '#6B7280', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
+                Financial and compliance issues raised by the Auditor-General — with the
+                opinion for each year. Cited to report and page.
+              </p>
+            </div>
+            <FindingsList findings={findings} />
+          </div>
         )}
       </div>
     </div>
