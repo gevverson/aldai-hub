@@ -197,6 +197,8 @@ def build(county, raw_path):
 
 
 SLUG_TO_COUNTY = {
+    "nairobi": "Nairobi", "nakuru": "Nakuru", "machakos": "Machakos",
+    "kisii": "Kisii", "murang'a": "Murang'a",
     "uasin_gishu": "Uasin Gishu", "kericho": "Kericho", "kiambu": "Kiambu",
     "mombasa": "Mombasa", "kisumu": "Kisumu", "kakamega": "Kakamega",
 }

@@ -46,3 +46,4 @@ echo "Done"
 ai-service/chroma_db/
 server/data/seed.js.pre-merge.bak
 server/data/seed.js.pre-mombasa.bak
+server/data/seed.js.pre-batch3.bak

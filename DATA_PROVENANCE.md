@@ -96,6 +96,17 @@ news), each labelled for what it is — not deletion.
 `OAG_SEED_TEXT` should carry **correct per-figure attributions** (or be retired)
 so retrieval never presents a Senator's estimate as an OAG audit finding.
 
+### 3d. Second regional batch — Nairobi + Eastern added (2026-07-28)
+
+Ingested Nairobi, Nakuru, Machakos, Kisii, Murang'a. Coverage now **12/47
+counties across every major region**: Nairobi, Coast (Mombasa), Eastern
+(Machakos), Central (Kiambu, Murang'a), Rift (Nandi, Uasin Gishu, Nakuru,
+Kericho), Nyanza (Kisumu, Kisii), Western (Kakamega).
+- 462 projects (8 counties with a register) + 2,914 findings (12 counties, 104
+  constituencies). Ghost count held at 4 (the false-ghost guard held on the new
+  data). geography.js covered flags now auto-derived from national_projects.json
+  so they can never drift from the data.
+
 ### 3c. Constituency-level audit findings layer (2026-07-25)
 
 Not every OAG NG-CDF report has a project register, but every one carries an

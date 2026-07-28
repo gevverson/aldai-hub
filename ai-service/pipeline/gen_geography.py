@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Generate the national geography.js from the authoritative county list."""
 import json
+from pathlib import Path
+ROOT = Path(__file__).parent
 
 # County -> constituencies, from Wikipedia "Constituencies of Kenya"
 # (IEBC First Schedule). Verified: 47 counties, 290 constituencies.
@@ -65,13 +67,16 @@ CODES = {n: i+1 for i, n in enumerate([
 ])}
 
 # Constituencies with OAG per-project data actually ingested and verified.
-# Coverage is at CONSTITUENCY level: many counties publish narrative-only
-# NG-CDF reports (no project register), so a county may be only partly covered.
-COVERED = {
-    "Nandi": {"Aldai","Chesumei","Emgwen","Mosop","Nandi Hills"},
-    "Uasin Gishu": {"Ainabkoi","Kapseret","Kesses","Soy"},
-    "Mombasa": {"Changamwe","Kisauni"},
-}
+# Coverage is at CONSTITUENCY level (many counties publish narrative-only
+# reports). Derived directly from national_projects.json so the covered flags
+# can never drift from the data that actually exists.
+import json as _json
+COVERED = {}
+_proj = ROOT / "national_projects.json"
+if _proj.exists():
+    for _r in _json.loads(_proj.read_text()):
+        if _r.get("constituency"):
+            COVERED.setdefault(_r["county"], set()).add(_r["constituency"])
 
 n_counties = len(DATA)
 n_const = sum(len(v) for v in DATA.values())
