@@ -131,6 +131,37 @@ const Methodology = () => {
             </div>
           </Card>
 
+          {/* Two kinds of evidence */}
+          <Card>
+            <h2 className="font-display text-white mb-2" style={{ fontSize: '22px' }}>Two kinds of evidence</h2>
+            <p className="mb-5" style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}>
+              We keep these strictly separate, because they mean different things.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl" style={{ background: '#0A0A0A', border: '1px solid #1F2937' }}>
+                <p className="font-bold uppercase tracking-wider mb-2" style={{ color: '#D97706', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
+                  📍 Projects
+                </p>
+                <p style={{ color: '#D1D5DB', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+                  Physical projects the Auditor-General verified on the ground — a school, a road, a hospital.
+                  We show the official status versus what auditors actually found. A project can be complete,
+                  incomplete, stalled, or — where the report says so — a ghost project that does not exist.
+                </p>
+              </div>
+              <div className="p-4 rounded-xl" style={{ background: '#0A0A0A', border: '1px solid #1F2937' }}>
+                <p className="font-bold uppercase tracking-wider mb-2" style={{ color: '#D97706', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
+                  📄 Audit findings
+                </p>
+                <p style={{ color: '#D1D5DB', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+                  Financial and compliance issues the auditor raised — unsupported payments, pending bills,
+                  missing records — with the audit opinion for each year. A finding is <em>not</em> a physical
+                  project and is never shown as a ghost project. The figure on a finding is labelled
+                  "figure cited", because the amount quoted may be context, not the sum in dispute.
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* Source documents */}
           <Card>
             <h2 className="font-display text-white mb-2" style={{ fontSize: '22px' }}>Official source documents</h2>
@@ -159,6 +190,45 @@ const Methodology = () => {
                 </div>
               ))}
             </div>
+          </Card>
+
+          {/* Corrections & right of reply */}
+          <Card>
+            <h2 className="font-display text-white mb-4" style={{ fontSize: '22px' }}>Corrections &amp; right of reply · Marekebisho</h2>
+            <p className="mb-4 leading-relaxed" style={{ color: '#D1D5DB', fontSize: '15px', fontFamily: "'DM Sans', sans-serif" }}>
+              We report what the Auditor-General documented — and we take accuracy seriously. If you believe an
+              entry misreads the source, cites the wrong page, or a project has since changed on the ground, tell
+              us and we will check it against the primary document.
+            </p>
+            <ul className="space-y-2 mb-4" style={{ color: '#D1D5DB', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
+              <li className="flex gap-3"><span aria-hidden style={{ color: '#D97706' }}>•</span><span>
+                <strong className="text-white">Named in a finding?</strong> Any person or entity has a right of reply.
+                Send your response and we will publish it alongside the entry.</span></li>
+              <li className="flex gap-3"><span aria-hidden style={{ color: '#D97706' }}>•</span><span>
+                <strong className="text-white">Think a figure is wrong?</strong> Point us to the exact report and page.
+                If the source says something different, we correct it and note the change.</span></li>
+              <li className="flex gap-3"><span aria-hidden style={{ color: '#D97706' }}>•</span><span>
+                <strong className="text-white">Project completed since the audit?</strong> Reality changes; the archived
+                audit does not. We add the update without deleting the record.</span></li>
+            </ul>
+            <p style={{ color: '#9CA3AF', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
+              Contact: <a href="mailto:corrections@machoyamwananchi.org" className="underline underline-offset-2 hover:text-amber-400" style={{ color: '#D97706' }}>corrections@machoyamwananchi.org</a>
+            </p>
+          </Card>
+
+          {/* Legal basis */}
+          <Card>
+            <h2 className="font-display text-white mb-4" style={{ fontSize: '22px' }}>Why this is lawful to publish</h2>
+            <p className="mb-3 leading-relaxed" style={{ color: '#D1D5DB', fontSize: '15px', fontFamily: "'DM Sans', sans-serif" }}>
+              This platform does one thing: it makes the Auditor-General's own findings — already public and tabled
+              before Parliament and the County Assemblies under Article 229 of the Constitution — easier for citizens
+              to read. We publish fair and accurate summaries of those official documents, each cited to its report
+              and page. We do not invent allegations, infer intent, or publish unverified rumour.
+            </p>
+            <p style={{ color: '#6B7280', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+              This is general context, not legal advice. Nothing here names an individual unless the underlying
+              audit report does.
+            </p>
           </Card>
 
           {/* Verify it yourself */}
