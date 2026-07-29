@@ -177,6 +177,10 @@ def build(county, raw_path):
                 else "REPORTED — NO VERIFICATION RESULT"
             )
             note = f"{activity}. {remark}".strip(". ") if activity else remark
+            if not note.strip():
+                # Row had an amount but no activity/remark text in the source
+                # table. Be explicit rather than emit an empty note.
+                note = "Listed in the audit project table; no descriptive remark recorded in the source."
             out.append({
                 "name": name,
                 "county": county,
@@ -197,6 +201,7 @@ def build(county, raw_path):
 
 
 SLUG_TO_COUNTY = {
+    "makueni":"Makueni","homa_bay":"Homa Bay","migori":"Migori","garissa":"Garissa","nyeri":"Nyeri","bungoma":"Bungoma",
     "nairobi": "Nairobi", "nakuru": "Nakuru", "machakos": "Machakos",
     "kisii": "Kisii", "murang'a": "Murang'a",
     "uasin_gishu": "Uasin Gishu", "kericho": "Kericho", "kiambu": "Kiambu",

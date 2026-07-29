@@ -80,16 +80,19 @@ def main():
                         if NOISE.search(joined) or len(joined) < 12:
                             continue
                         cells = [c for c in cells if c]
-                        # A row with no leading serial number is a spill-over of
-                        # the previous project's remarks across a page break.
+                        amounts = AMOUNT.findall(joined)
+                        # A row with no leading serial number AND no amount of its
+                        # own is a spill-over of the previous project's remarks. A
+                        # row that has its own amount is a new project even without
+                        # a serial column (else a whole table collapses into row 1).
                         if (
                             records
                             and not re.match(r"^\d{1,3}[.)]?$", cells[0])
+                            and not amounts
                             and records[-1]["source_pdf"] == pdf_path.name
                         ):
                             records[-1]["cells"][-1] += " " + " ".join(cells)
                             continue
-                        amounts = AMOUNT.findall(joined)
                         records.append(
                             {
                                 "source_pdf": pdf_path.name,

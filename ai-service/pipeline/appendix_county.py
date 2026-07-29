@@ -50,10 +50,16 @@ for pdf in pdfs:
                         joined = " | ".join(cells)
                         if NOISE.search(joined) or len(joined) < 12:
                             continue
-                        if recs and not re.match(r"^\d{1,3}[.)]?$", cells[0]) and recs[-1]["source_pdf"] == pdf.name:
+                        amts = AMOUNT.findall(joined)
+                        # Merge into the previous row ONLY when this is a genuine
+                        # spill-over line: no leading serial number AND no amount
+                        # of its own. A row that carries its own amount is a new
+                        # project even when the table has no serial-number column
+                        # (otherwise a whole table collapses into row 1).
+                        if (recs and not re.match(r"^\d{1,3}[.)]?$", cells[0])
+                                and not amts and recs[-1]["source_pdf"] == pdf.name):
                             recs[-1]["cells"][-1] += " " + " ".join(cells)
                             continue
-                        amts = AMOUNT.findall(joined)
                         recs.append({
                             "source_pdf": pdf.name, "page": page.page_number,
                             "appendix": title, "cells": cells,
