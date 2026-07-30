@@ -41,12 +41,12 @@ export const counties = [
     name: "Kilifi",
     code: 3,
     constituencies: [
-      { name: "Kilifi North", covered: false },
+      { name: "Kilifi North", covered: true  },
       { name: "Kilifi South", covered: false },
       { name: "Kaloleni", covered: false },
-      { name: "Rabai", covered: false },
+      { name: "Rabai", covered: true  },
       { name: "Ganze", covered: false },
-      { name: "Malindi", covered: false },
+      { name: "Malindi", covered: true  },
       { name: "Magarini", covered: false },
     ],
   },
@@ -424,9 +424,9 @@ export const counties = [
     constituencies: [
       { name: "Sotik", covered: false },
       { name: "Chepalungu", covered: false },
-      { name: "Bomet East", covered: false },
+      { name: "Bomet East", covered: true  },
       { name: "Bomet Central", covered: false },
-      { name: "Konoin", covered: false },
+      { name: "Konoin", covered: true  },
     ],
   },
   {

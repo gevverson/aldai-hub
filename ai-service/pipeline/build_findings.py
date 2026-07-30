@@ -19,6 +19,7 @@ import extract  # sibling module (extract.extract(pdf) -> doc dict)
 ROOT = Path(__file__).parent
 
 SLUG_TO_COUNTY = {
+    "meru":"Meru","kilifi":"Kilifi","kitui":"Kitui","bomet":"Bomet","kajiado":"Kajiado","siaya":"Siaya",
     "makueni":"Makueni","homa_bay":"Homa Bay","migori":"Migori","garissa":"Garissa","nyeri":"Nyeri","bungoma":"Bungoma",
     "nairobi": "Nairobi", "nakuru": "Nakuru", "machakos": "Machakos",
     "kisii": "Kisii", "murang'a": "Murang'a",
