@@ -210,8 +210,8 @@ export const counties = [
     code: 18,
     constituencies: [
       { name: "Kinangop", covered: false },
-      { name: "Kipipiri", covered: false },
-      { name: "Ol Kalou", covered: false },
+      { name: "Kipipiri", covered: true  },
+      { name: "Ol Kalou", covered: true  },
       { name: "Ol Jorok", covered: false },
       { name: "Ndaragwa", covered: false },
     ],
@@ -277,7 +277,7 @@ export const counties = [
       { name: "Turkana West", covered: false },
       { name: "Turkana Central", covered: false },
       { name: "Loima", covered: false },
-      { name: "Turkana South", covered: false },
+      { name: "Turkana South", covered: true  },
       { name: "Turkana East", covered: false },
     ],
   },
@@ -285,10 +285,10 @@ export const counties = [
     name: "West Pokot",
     code: 24,
     constituencies: [
-      { name: "Kapenguria", covered: false },
+      { name: "Kapenguria", covered: true  },
       { name: "Sigor", covered: false },
-      { name: "Kacheliba", covered: false },
-      { name: "Pokot South", covered: false },
+      { name: "Kacheliba", covered: true  },
+      { name: "Pokot South", covered: true  },
     ],
   },
   {
@@ -296,8 +296,8 @@ export const counties = [
     code: 25,
     constituencies: [
       { name: "Samburu West", covered: false },
-      { name: "Samburu North", covered: false },
-      { name: "Samburu East", covered: false },
+      { name: "Samburu North", covered: true  },
+      { name: "Samburu East", covered: true  },
     ],
   },
   {
@@ -350,11 +350,11 @@ export const counties = [
     code: 30,
     constituencies: [
       { name: "Tiaty", covered: false },
-      { name: "Baringo North", covered: false },
+      { name: "Baringo North", covered: true  },
       { name: "Baringo Central", covered: false },
-      { name: "Baringo South", covered: false },
+      { name: "Baringo South", covered: true  },
       { name: "Mogotio", covered: false },
-      { name: "Eldama Ravine", covered: false },
+      { name: "Eldama Ravine", covered: true  },
     ],
   },
   {
@@ -390,7 +390,7 @@ export const counties = [
       { name: "Kilgoris", covered: false },
       { name: "Emurua Dikirr", covered: false },
       { name: "Narok North", covered: false },
-      { name: "Narok East", covered: false },
+      { name: "Narok East", covered: true  },
       { name: "Narok South", covered: false },
       { name: "Narok West", covered: false },
     ],

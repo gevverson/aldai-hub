@@ -201,12 +201,19 @@ def build(county, raw_path):
 
 
 SLUG_TO_COUNTY = {
-    "meru":"Meru","kilifi":"Kilifi","kitui":"Kitui","bomet":"Bomet","kajiado":"Kajiado","siaya":"Siaya",
-    "makueni":"Makueni","homa_bay":"Homa Bay","migori":"Migori","garissa":"Garissa","nyeri":"Nyeri","bungoma":"Bungoma",
-    "nairobi": "Nairobi", "nakuru": "Nakuru", "machakos": "Machakos",
-    "kisii": "Kisii", "murang'a": "Murang'a",
-    "uasin_gishu": "Uasin Gishu", "kericho": "Kericho", "kiambu": "Kiambu",
-    "mombasa": "Mombasa", "kisumu": "Kisumu", "kakamega": "Kakamega",
+    "mombasa": "Mombasa", "kwale": "Kwale", "kilifi": "Kilifi", "tana_river": "Tana River",
+    "lamu": "Lamu", "taita_taveta": "Taita-Taveta", "garissa": "Garissa", "wajir": "Wajir",
+    "mandera": "Mandera", "marsabit": "Marsabit", "isiolo": "Isiolo", "meru": "Meru",
+    "tharaka_nithi": "Tharaka-Nithi", "embu": "Embu", "kitui": "Kitui", "machakos": "Machakos",
+    "makueni": "Makueni", "nyandarua": "Nyandarua", "nyeri": "Nyeri", "kirinyaga": "Kirinyaga",
+    "murang'a": "Murang'a", "kiambu": "Kiambu", "turkana": "Turkana", "west_pokot": "West Pokot",
+    "samburu": "Samburu", "trans_nzoia": "Trans-Nzoia", "uasin_gishu": "Uasin Gishu",
+    "elgeyo_marakwet": "Elgeyo-Marakwet", "nandi": "Nandi", "baringo": "Baringo",
+    "laikipia": "Laikipia", "nakuru": "Nakuru", "narok": "Narok", "kajiado": "Kajiado",
+    "kericho": "Kericho", "bomet": "Bomet", "kakamega": "Kakamega", "vihiga": "Vihiga",
+    "bungoma": "Bungoma", "busia": "Busia", "siaya": "Siaya", "kisumu": "Kisumu",
+    "homa_bay": "Homa Bay", "migori": "Migori", "kisii": "Kisii", "nyamira": "Nyamira",
+    "nairobi": "Nairobi"
 }
 
 if __name__ == "__main__":

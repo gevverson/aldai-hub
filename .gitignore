@@ -49,3 +49,12 @@ server/data/seed.js.pre-mombasa.bak
 server/data/seed.js.pre-batch3.bak
 server/data/seed.js.pre-batch4.bak
 server/data/seed.js.pre-batch5.bak
+
+# Pipeline intermediate/regenerable artifacts
+ai-service/pipeline/__pycache__/
+ai-service/pipeline/counties/*/corpus/
+ai-service/pipeline/counties/*/text/
+ai-service/pipeline/_audit_check.py
+ai-service/pipeline/seed_generated.js
+ai-service/pipeline/seed_generated.json
+

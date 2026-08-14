@@ -1,0 +1,557 @@
+{
+  "Baringo||Baringo Central": {
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Baringo||Baringo North": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Adverse Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Baringo||Baringo South": {
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Baringo||Eldama Ravine": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Baringo||Mogotio": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Baringo||Tiaty": {
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Busia||Budalangi": {
+    "2017/2018": "Adverse Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Busia||Butula": {
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Busia||Funyula": {
+    "2020/2021": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Busia||Matayos": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Busia||Nambale": {
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Busia||Teso North": {
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Busia||Teso South": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Elgeyo-Marakwet||Keiyo South": {
+    "2020/2021": "Qualified Opinion",
+    "2016/2017": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Elgeyo-Marakwet||Keiyo North": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Elgeyo-Marakwet||Marakwet East": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Elgeyo-Marakwet||Marakwet West": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Embu||Manyatta": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Embu||Mbeere North": {
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Adverse Opinion"
+  },
+  "Embu||Mbeere South": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Embu||Runyenjes": {
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Isiolo||Isiolo North": {
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Isiolo||Isiolo South": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Kirinyaga||Gichugu": {
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Kirinyaga||Kirinyaga Central": {
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Kirinyaga||Mwea": {
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Adverse Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Kirinyaga||Ndia": {
+    "2020/2021": "Qualified Opinion"
+  },
+  "Kwale||Kinango": {
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Kwale||Lunga Lunga": {
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Kwale||Matuga": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Kwale||Msambweni": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Laikipia||Laikipia East": {
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Laikipia||Laikipia North": {
+    "2020/2021": "Qualified Opinion"
+  },
+  "Laikipia||Laikipia West": {
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Lamu||Lamu East": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Lamu||Lamu West": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Mandera||Banissa": {
+    "2016/2017": "Qualified Opinion"
+  },
+  "Mandera||Lafey": {
+    "2021/2022": "Qualified Opinion",
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Mandera||Mandera North": {
+    "2019/2020": "Qualified Opinion",
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion"
+  },
+  "Mandera||Mandera South": {
+    "2019/2020": "Qualified Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Mandera||Mandera East": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Mandera||Mandera West": {
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Marsabit||Laisamis": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Marsabit||Moyale": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Marsabit||North Horr": {
+    "2019/2020": "Qualified Opinion",
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Marsabit||Saku": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Narok||Emurua Dikirr": {
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Adverse Opinion"
+  },
+  "Narok||Kilgoris": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Adverse Opinion"
+  },
+  "Narok||Narok South": {
+    "2019/2020": "Qualified Opinion",
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion"
+  },
+  "Narok||Narok East": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Narok||Narok North": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Narok||Narok West": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Nyamira||Borabu": {
+    "2019/2020": "Qualified Opinion",
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Nyamira||Kitutu Masaba": {
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Nyamira||North Mugirango": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Nyamira||West Mugirango": {
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Nyandarua||Kinangop": {
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion"
+  },
+  "Nyandarua||Kipipiri": {
+    "2018/2019": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Nyandarua||Ndaragwa": {
+    "2016/2017": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Nyandarua||Ol Kalou": {
+    "2020/2021": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion"
+  },
+  "Samburu||Samburu East": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Samburu||Samburu North": {
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Samburu||Samburu West": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Taita-Taveta||Mwatate": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Taita-Taveta||Taveta": {
+    "2021/2022": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion"
+  },
+  "Taita-Taveta||Voi": {
+    "2016/2017": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Taita-Taveta||Wundanyi": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion"
+  },
+  "Tana River||Bura": {
+    "2019/2020": "Qualified Opinion",
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Tana River||Galole": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Tana River||Garsen": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Tharaka-Nithi||Maara": {
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Tharaka-Nithi||Tharaka": {
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Trans-Nzoia||Cherangany": {
+    "2021/2022": "Qualified Opinion",
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion"
+  },
+  "Trans-Nzoia||Endebess": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Trans-Nzoia||Kiminini": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Trans-Nzoia||Kwanza": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Trans-Nzoia||Saboti": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Turkana||Loima": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Turkana||Turkana West": {
+    "2021/2022": "Qualified Opinion",
+    "2016/2017": "Disclaimer of Opinion",
+    "2018/2019": "Adverse Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Turkana||Turkana Central": {
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Adverse Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Turkana||Turkana East": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Turkana||Turkana North": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Turkana||Turkana South": {
+    "2016/2017": "Disclaimer of Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Vihiga||Emuhaya": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Vihiga||Hamisi": {
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Vihiga||Luanda": {
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Vihiga||Sabatia": {
+    "2016/2017": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "Vihiga||Vihiga": {
+    "2021/2022": "Qualified Opinion"
+  },
+  "Wajir||Eldas": {
+    "2016/2017": "Qualified Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion"
+  },
+  "Wajir||Tarbaj": {
+    "2016/2017": "Qualified Opinion"
+  },
+  "Wajir||Wajir East": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Wajir||Wajir North": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  },
+  "Wajir||Wajir South": {
+    "2018/2019": "Qualified Opinion"
+  },
+  "Wajir||Wajir West": {
+    "2016/2017": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "West Pokot||Kacheliba": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Qualified Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "West Pokot||Kapenguria": {
+    "2016/2017": "Adverse Opinion",
+    "2018/2019": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "West Pokot||Pokot South": {
+    "2016/2017": "Adverse Opinion",
+    "2017/2018": "Adverse Opinion",
+    "2020/2021": "Qualified Opinion",
+    "2021/2022": "Qualified Opinion"
+  },
+  "West Pokot||Sigor": {
+    "2017/2018": "Qualified Opinion",
+    "2019/2020": "Qualified Opinion",
+    "2020/2021": "Qualified Opinion"
+  }
+}
