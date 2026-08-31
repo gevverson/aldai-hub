@@ -409,12 +409,18 @@ const LoadingDots = () => {
 const DocumentInventory = () => {
   const [docs, setDocs]   = useState([]);
   const [status, setStatus] = useState(null);
+  // 'loading' → 'ready' | 'error'. Without this the panel showed "Loading…"
+  // for an empty list, a failed fetch and a genuine zero alike, so a service
+  // that was answering nothing looked indistinguishable from one still
+  // starting up. On this page in particular, "we hold no documents" is a
+  // thing the reader is entitled to know.
+  const [docsState, setDocsState] = useState('loading');
 
   useEffect(() => {
     fetch('/api/audit/documents')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d) setDocs(d.documents || []); })
-      .catch(() => {});
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d) => { setDocs(d?.documents || []); setDocsState('ready'); })
+      .catch(() => setDocsState('error'));
 
     fetch('/api/audit/status')
       .then((r) => (r.ok ? r.json() : null))
@@ -451,7 +457,11 @@ const DocumentInventory = () => {
       <div className="flex flex-wrap gap-2">
         {docs.length === 0 ? (
           <span style={{ color: '#6B7280', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
-            Loading…
+            {docsState === 'loading'
+              ? 'Loading…'
+              : docsState === 'error'
+                ? 'Could not reach the document index.'
+                : 'No documents indexed — the AI cannot answer questions yet.'}
           </span>
         ) : docs.map((d, i) => (
           <span

@@ -13,8 +13,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const TIMEOUT_MS = 25_000;
-const PYTHON_RETRY_ATTEMPTS = 2;
+// Measured against the deployed free-tier RAG service with the full 46-report
+// index loaded: ~32s warm, ~68s on a cold start (the ONNX embedding model has
+// to load before the first query can be embedded). The old 25s budget was
+// shorter than the service's best case, so *every* question timed out and the
+// citizen got the fallback instead of the cited answer — the RAG worked and
+// nobody could see it. One attempt, not two: a timeout retry just doubles the
+// wait on a request that was never going to be fast, and 2×25s was already
+// making people wait 50s to be told nothing.
+const TIMEOUT_MS = 75_000;
+const PYTHON_RETRY_ATTEMPTS = 1;
 const GEMINI_RETRY_ATTEMPTS = 2;
 const RETRY_BASE_DELAY_MS = 350;
 
@@ -407,7 +415,9 @@ export function createAuditRouter({
 
   router.get('/documents', async (req, res) => {
     try {
-      const pyRes = await fetchImpl(`${aiUrl}/documents`, { signal: AbortSignal.timeout(5000) });
+      // 20s, not 5s: on a cold container this call is what wakes the service,
+      // and a 5s budget meant the UI's document list sat on "Loading…" forever.
+      const pyRes = await fetchImpl(`${aiUrl}/documents`, { signal: AbortSignal.timeout(20000) });
       if (!pyRes.ok) throw new Error(`HTTP ${pyRes.status}`);
       const data = await pyRes.json();
       return res.json(data);
@@ -426,7 +436,7 @@ export function createAuditRouter({
 
   router.get('/status', async (req, res) => {
     try {
-      const pyRes = await fetchImpl(`${aiUrl}/health`, { signal: AbortSignal.timeout(4000) });
+      const pyRes = await fetchImpl(`${aiUrl}/health`, { signal: AbortSignal.timeout(12000) });
       const data = await pyRes.json();
       return res.json({ python_service: 'online', ...data, fallback: 'unsourced-answer-refused' });
     } catch {
