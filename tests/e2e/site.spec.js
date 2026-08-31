@@ -345,7 +345,7 @@ test.describe('AI Audit Translator', () => {
     // Live LLM dependency — skip when no AI backend is reachable (e.g. hermetic CI).
     const status = await request.get(`${SERVER}/api/audit/status`).then((r) => r.json()).catch(() => ({}));
     test.skip(
-      status.python_service !== 'online' && status.fallback !== 'gemini-direct-fallback',
+      status.python_service !== 'online' && status.fallback !== 'unsourced-answer-refused',
       'AI backend offline — live-answer test skipped'
     );
     const res = await page.request.post('/api/audit/query', {
@@ -363,7 +363,7 @@ test.describe('AI Audit Translator', () => {
     // Live LLM dependency — skip when no AI backend is reachable (e.g. hermetic CI).
     const status = await request.get(`${SERVER}/api/audit/status`).then((r) => r.json()).catch(() => ({}));
     test.skip(
-      status.python_service !== 'online' && status.fallback !== 'gemini-direct-fallback',
+      status.python_service !== 'online' && status.fallback !== 'unsourced-answer-refused',
       'AI backend offline — submit-and-history test skipped'
     );
     // Submit a question first — history only renders once messages exist

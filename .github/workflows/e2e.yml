@@ -31,6 +31,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Fast, dependency-free assertion that the AI cannot answer from anything
+      # but the indexed OAG PDFs. Runs first so a regression here fails the run
+      # in seconds rather than after the full Playwright suite.
+      - name: Guard — no unsourced AI answers
+        run: python3 tests/guards/test_no_unsourced_answers.py
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

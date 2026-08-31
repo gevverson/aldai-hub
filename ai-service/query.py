@@ -3,8 +3,11 @@ query.py — RAG Query Handler
 Macho ya Mwananchi | AI Audit RAG Service
 
 Embeds citizen questions via ChromaDB DefaultEmbeddingFunction,
-retrieves relevant OAG audit chunks, sends to Gemini 2.0 Flash
+retrieves relevant OAG audit chunks, sends them to Gemini (see MODEL_CHAIN)
 with a strict civic accountability system prompt.
+
+If retrieval returns nothing, the question is declined without calling the
+model at all — no chunk, no answer.
 
 Free tier: 1,500 requests/day — more than enough for this platform.
 Get your key at: https://aistudio.google.com/app/apikey
@@ -35,6 +38,16 @@ MODEL_CHAIN = [
 ]
 MODEL        = MODEL_CHAIN[0]   # reported in responses; updated on fallback
 TOP_K_CHUNKS = 6
+
+# Chroma always returns the top K chunks, however poor the match — so without a
+# floor an off-topic question still arrives at the model wrapped in "OFFICIAL
+# OAG AUDIT DOCUMENTS", which is an invitation to answer it. Measured over the
+# 46-report corpus (cosine distance): genuine audit questions match at
+# 0.41–0.63, off-topic questions at 0.75–0.91. 0.72 sits in the gap.
+# Swahili questions match ~0.1 worse than their English equivalents — the
+# embedding model is English-centric — so the margin is deliberately kept above
+# the worst observed Swahili match. Tune with RELEVANCE_MAX_DISTANCE.
+MAX_DISTANCE = float(os.getenv("RELEVANCE_MAX_DISTANCE", "0.72"))
 
 # ── System prompt ─────────────────────────────────────────────
 SYSTEM_PROMPT = """You are a civic accountability assistant for Nandi County and Aldai
@@ -115,6 +128,7 @@ async def answer_question(
     # ── Step 1: Retrieve from ChromaDB ──
     sources_data: list[dict] = []
     context_parts: list[str] = []
+    retrieval_failed = False
 
     try:
         col     = get_collection()
@@ -128,6 +142,8 @@ async def answer_question(
         distances = results.get("distances", [[]])[0]
 
         for i, (doc, meta, dist) in enumerate(zip(docs, metas, distances), start=1):
+            if dist > MAX_DISTANCE:
+                continue  # too weak to cite; see MAX_DISTANCE
             doc_name  = meta.get("document_name", "OAG Report")
             page      = meta.get("page_number", "?")
             year      = meta.get("year", "")
@@ -145,10 +161,29 @@ async def answer_question(
             })
 
     except Exception as e:
+        # Do NOT fall back to "use general OAG knowledge" here. Without retrieved
+        # chunks the model has nothing to cite, and the format it is asked to fill
+        # in demands amounts, wards and page numbers — so an invitation to
+        # improvise produces confident, well-formatted fabrication. Fail loudly.
         logger.error(f"[QUERY] ChromaDB error: {e}")
-        context_parts = ["Vector database temporarily unavailable. Use general OAG knowledge."]
+        retrieval_failed = True
+    else:
+        if docs and not context_parts:
+            logger.info(
+                "[QUERY] %d chunk(s) retrieved but all above the relevance "
+                "floor (best=%.3f, max=%.2f) — declining",
+                len(docs), min(distances), MAX_DISTANCE,
+            )
 
-    context_text = "\n---\n".join(context_parts) if context_parts else "No documents retrieved."
+    # No sources means no answer. Short-circuit before Gemini: a model handed an
+    # empty context and a template full of required fields will fill them in.
+    if not context_parts:
+        logger.warning(
+            "[QUERY] no chunks retrieved (retrieval_failed=%s) — declining", retrieval_failed
+        )
+        return _no_sources_response(lang, start, retrieval_failed)
+
+    context_text = "\n---\n".join(context_parts)
 
     # ── Step 2: Build prompt ──
     user_message = (
@@ -216,28 +251,52 @@ async def answer_question(
         return {"error": f"AI service error: {err[:120]}"}
 
 
+def _no_sources_response(lang: str, start: float, retrieval_failed: bool) -> dict:
+    """Answer honestly when the corpus returned nothing.
+
+    Returned instead of calling Gemini, so there is no path by which an empty
+    index produces a cited-looking answer. This is the whole point: the platform
+    promises every figure is read out of a signed report, and an answer with no
+    retrieved chunk behind it cannot keep that promise.
+    """
+    if retrieval_failed:
+        sw = ("Samahani — kwa sasa siwezi kufikia hati za ukaguzi. "
+              "Tafadhali jaribu tena baadaye.")
+        en = ("Sorry — I cannot reach the audit documents right now. "
+              "Please try again shortly.")
+    else:
+        sw = ("Habari hii haiko katika hati nilizo nazo. Ninajibu tu kutoka "
+              "ripoti za Mkaguzi Mkuu wa Serikali nilizonazo — sitakisii.")
+        en = ("This information is not in the documents I have access to. I only "
+              "answer from the Auditor-General reports I hold — I do not guess.")
+
+    body = f"{sw}\n\n{en}" if lang == "sw" else f"{en}\n\n{sw}"
+    text = (
+        f"📋 JIBU (Answer):\n{body}\n\n"
+        "👉 UNACHOWEZA KUFANYA (What You Can Do):\n"
+        "- EACC (Kupiga simu bure / Free call): 0800 720 629\n"
+        "- DCI (Uchunguzi wa uhalifu / Criminal investigations): 0800 722 203"
+    )
+    return {
+        "answer":           text,
+        "sources":          [],
+        "language":         lang,
+        "response_time_ms": int((time.time() - start) * 1000),
+        "model":            "none",
+        "no_sources":       True,
+        "retrieval_failed": retrieval_failed,
+    }
+
+
 def _mock_response(lang: str, sources: list, start: float) -> dict:
-    """Dev mode mock — used when GEMINI_API_KEY is not set."""
+    """Dev placeholder — used when GEMINI_API_KEY is not set."""
     elapsed = int((time.time() - start) * 1000)
-    text = """📋 JIBU (Answer):
-Kwa mujibu wa ripoti ya OAG ya mwaka 2019/2020, mradi wa Kimaren Girls Secondary ulitengewa Ksh 3,200,000. Wakaguzi walitembelea eneo hilo na hawakupata shule — ni shamba tupu. Pesa zililipwa kwa mkandarasi ambaye hajapatikana.
-
-💰 PESA ILIYOHUSIKA (Money Involved):
-Ksh 3,200,000 — Ujenzi wa Kimaren Girls Secondary School
-
-📍 MAHALI (Where):
-Kata ya Kemeloi-Maraba, Jimbo la Aldai, Kaunti ya Nandi
-
-🚨 UZITO WA TATIZO (Severity):
-MUHIMU SANA (Critical) — Mradi wa kufikirika (ghost project): pesa za umma zililipwa kwa mradi usiokuwepo kabisa.
-
-📄 CHANZO (Source):
-Ripoti ya Ukaguzi wa NG-CDF Nandi FY2019/20 — Ukurasa 42
-
-👉 UNACHOWEZA KUFANYA (What You Can Do):
-- EACC (bure/free): 0800 720 629
-- DCI: 0800 722 203
-- Tumia fomu ya ripoti ya siri katika jukwaa hili (Report anonymously here)"""
+    text = (
+        "📋 JIBU (Answer):\n"
+        "AI Audit Translator haijawashwa kwenye seva hii (GEMINI_API_KEY haipo).\n"
+        "The AI Audit Translator is not configured on this server "
+        "(GEMINI_API_KEY is not set). No answer can be given."
+    )
 
     return {
         "answer":           text,

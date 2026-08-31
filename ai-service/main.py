@@ -8,8 +8,10 @@ Endpoints:
   GET  /documents  — List all ingested documents
   GET  /health     — Health check
 
-On startup: automatically ingests the built-in OAG knowledge base (from text)
-so the service works immediately without any PDFs uploaded.
+On startup: purges the retired hand-written summary from the index, then
+(optionally) indexes the 46 signed OAG PDFs in ./documents. Answers are
+grounded in those PDFs only — if the corpus is not indexed, the service says
+so rather than answering from memory.
 """
 
 import os
@@ -37,180 +39,54 @@ logging.basicConfig(
 )
 logger = logging.getLogger("macho-audit-ai")
 
-# ── Built-in OAG knowledge base (text, pre-seeded on startup) ─
-OAG_SEED_TEXT = """
-============================================================
-OFFICIAL OAG AUDIT INTELLIGENCE — NANDI COUNTY / ALDAI NG-CDF
-Kenya Office of the Auditor-General Reports FY 2018/19 | FY 2019/20 | FY 2020/21 | FY 2023/24
-============================================================
-
---- GHOST PROJECTS (Projects paid for but physically non-existent) ---
-
-1. KIMAREN GIRLS SECONDARY SCHOOL — Kemeloi-Maraba Ward
-   Fund: NG-CDF | Year: FY 2019/20 | Allocated: Ksh 3,200,000
-   OAG Reference: Nandi NG-CDF Audit Report FY2019/20, Page 42
-   Official Status: "COMPLETE" — PHYSICAL VERIFICATION: DOES NOT EXIST
-   Finding: Auditors visited GPS coordinates. No school structure found. Empty field.
-   No foundation, gate, fencing, or signage. Payment vouchers confirm Ksh 3.2M disbursed.
-   No completion certificate exists. Contractor identity unverifiable.
-   Responsible Officer: NG-CDF Fund Account Manager Cornelius Serem
-   EACC Tracking Code: GHOST-KIM-19
-   Severity: CRITICAL
-
---- STALLED / ABANDONED INFRASTRUCTURE ---
-
-2. KAPSABET MOTHER AND BABY UNIT — Kapsabet Ward
-   Fund: County Government | Year: FY 2019/20 | Allocated: Ksh 208,800,000
-   OAG Reference: Nandi County Audit Report FY2019/20, Page 88
-   Official Status: "ONGOING" — COMMUNITY STATUS: STALLED 4+ YEARS PAST DEADLINE
-   Finding: Construction halted. No meaningful progress for over 4 years past deadline.
-   Contractor absent. No penalty for abandonment despite binding contractual obligation.
-   Maternal health services severely compromised. No completion certificate issued.
-   Responsible Officer: County Executive Committee Member, Health Department
-   Tracking Code: STALL-KBT-MBU-19
-   Severity: HIGH
-
-3. KABIYET DAIRY CREAMERY — Kabiyet Ward
-   Fund: County Government | Years: FY 2016–2021 | Total Allocated: Ksh 621,000,000
-   OAG Reference: Multiple — FY16/17, FY17/18, FY18/19, FY19/20, FY20/21
-   Official Status: "UNDER CONSTRUCTION" — COMMUNITY STATUS: STALLED 8+ YEARS, NEVER OPERATIONAL
-   Finding: Ksh 621 million disbursed across multiple years. Facility never operational.
-   Cost exceeds market rate for equivalent facility by approximately 340%.
-   Auditors flagged inflated procurement in FY17/18. No contractor penalty. Ghost beneficiary allegations.
-   Responsible Officer: County Director of Agriculture and Procurement Unit
-   Severity: CRITICAL
-
-4. KAPSENGERE HOSPITAL PHASE II — Terik Ward
-   Fund: County Government | Year: FY 2019/20 | Allocated: Ksh 9,954,900
-   OAG Reference: Nandi County Audit Report FY2019/20, Page 94
-   Official Status: "COMPLETE" — PHYSICAL VERIFICATION: COMPLETELY ABANDONED
-   Finding: Site physically abandoned. Access ramp structurally defective — safety hazard.
-   OAG engineers recommended immediate demolition. Ksh 9.9M paid to contractor who vacated.
-   Patients cannot safely access facility. No completion certificate.
-   Responsible Officer: County Director of Infrastructure
-   Severity: HIGH
-
-5. KOBUJOI SUB-COUNTY HOSPITAL — Kobujoi Ward
-   Fund: County Government | Year: FY 2020/21 | Allocated: Ksh 3,292,946
-   OAG Reference: Nandi County Audit Report FY2020/21, Page 71
-   Finding: AUDIT OBSTRUCTION — Signed contract documents withheld from auditors.
-   Payment vouchers of Ksh 3.2M missing from audit trail.
-   Classified as obstruction of audit. Work minimal relative to amount paid.
-   Potential fraudulent payment to connected contractors flagged.
-   EACC Whistleblower Code: OBST-KBJ-20
-   Severity: CRITICAL
-
---- PAYROLL FRAUD (NANDI COUNTY GOVERNMENT) ---
-
-6. GHOST EMPLOYEES — COUNTY PAYROLL FRAUD
-   OAG Reference: Nandi County Audit Report FY2019/20 and FY2023/24, Pages 12–28
-   Finding: 1,885 ghost employees identified on Nandi County payroll.
-   Ksh 3,300,000,000 (Ksh 3.3 BILLION) in fraudulent salary payments.
-   Many entries: duplicated national ID numbers, deceased persons, non-existent individuals
-   registered in remote villages. Active EACC investigation ongoing.
-   Responsible Officers: County Secretary and Human Resource Director
-   Report to: DCI — 0800 722 203
-   Severity: CRITICAL / EACC ACTIVE INVESTIGATION
-
---- BURSARY FRAUD ---
-
-7. STUDENT BURSARY DISBURSEMENT — MISSING RECEIPTS
-   Fund: NG-CDF Bursary | OAG Reference: Nandi NG-CDF Audit FY2019/20
-   Amount: Ksh 50,200,000 (fifty million two hundred thousand)
-   Finding: Bursary funds disbursed to 847 students with NO acknowledgement receipts.
-   No proof that funds reached eligible students. Risk of diversion to ghost beneficiaries.
-   Supporting documents requested by auditors were not produced.
-   Severity: HIGH
-
---- LAND AND ASSET IRREGULARITIES ---
-
-8. MOGOMBEN PRIMARY SCHOOL LAND — Kemeloi-Maraba Ward
-   Fund: NG-CDF | Year: FY 2019/20 | Allocated: Ksh 1,000,000
-   OAG Reference: Nandi NG-CDF Audit Report FY2019/20, Page 55
-   Finding: 1.2 acres purchased. No title deed transferred to school.
-   Land remains legally in seller's name. Risk of future dispossession.
-   Severity: HIGH
-
-9. KIPLENGWAI PRIMARY SCHOOL LAND — Kaptumo-Kaboi Ward
-   Fund: NG-CDF | Year: FY 2019/20 | Allocated: Ksh 1,200,000
-   OAG Reference: Nandi NG-CDF Audit Report FY2019/20, Page 57
-   Finding: Land purchased without title deed or survey beacons.
-   No physical boundary survey. Market value estimated at Ksh 650,000 vs Ksh 1.2M paid.
-   Auditors flagged potential kickback conduit through inflated purchase price.
-   Severity: HIGH
-
---- MEDICAL INSURANCE IRREGULARITY ---
-
-10. MEDICAL INSURANCE CONTRACT — COUNTY-WIDE
-    Fund: County Government | Year: FY 2023/24 | Contract Value: Ksh 175,000,000
-    OAG Reference: Nandi County Audit Report FY2023/24
-    Finding: Contract worth Ksh 175 million AWARDED before tender evaluation was completed.
-    This violates Kenya Public Procurement and Asset Disposal Act 2015.
-    Evaluation documents post-dated the contract award date — evidence of retroactive fabrication.
-    Severity: CRITICAL
-
---- HEALTH FACILITY CLOSURES ---
-
-11. 144 HEALTH FACILITIES — NANDI COUNTY
-    OAG Reference: Nandi County Health Audit FY2019/20 and FY2023/24
-    Finding: 144 health facilities operating below minimum WHO/MoH standards.
-    Drugs reported purchased and delivered — not found at dispensaries during audit.
-    Medical equipment procured on paper — absent from facility inventories.
-    Citizens paying for private healthcare that public funds already covered.
-    Severity: HIGH
-
---- ACCOUNTABILITY SUMMARY ---
-Total Nandi County funds tracked: Ksh 50+ BILLION (cumulative)
-Active EACC investigation: Ksh 3.3 BILLION payroll fraud
-Stalled/abandoned projects (2018/2019 audit alone): 491
-Health facilities shut down: 144
-Responsible oversight body: Nandi County Assembly — accountability rating: POOR
-EACC cases from these findings: 4 active as of FY2021
-
---- HOW TO REPORT (FREE, ANONYMOUS) ---
-EACC: 0800 720 629 (free call, 24/7)
-DCI: 0800 722 203 (free call)
-Controller of Budget: cob@cob.go.ke
-PPOA: ppoa@ppoa.go.ke
-Macho ya Mwananchi: anonymous report form (zero identity data stored)
-============================================================
-"""
+# ── Corpus provenance ────────────────────────────────────────
+# There used to be a 7,000-character hand-written "built-in OAG knowledge base"
+# seeded here on every startup. It was retired: it named individual officers as
+# responsible for fraud and quoted an EACC tracking code, none of which appear
+# anywhere in the 46 signed Auditor-General PDFs this platform actually ships.
+# A site that promises "nothing is estimated" cannot answer from an unsourced
+# summary. Answers now come only from the indexed PDFs — see ingest_all.py.
+BUILTIN_SUMMARY_DOC = "OAG_BUILTIN_NANDI_KNOWLEDGE"
 
 
-# ── App lifespan: seed OAG knowledge on startup ──────────────
+def _purge_builtin_summary() -> None:
+    """Delete the retired hand-written summary from any index that still has it.
+
+    The blob is gone from the source, but an index that outlives a deploy (a
+    baked image, a mounted disk, a developer's local chroma_db) would keep
+    serving it. Removing it at startup makes the retirement stick everywhere.
+    """
+    try:
+        col = ingest_module.get_collection()
+        existing = col.get(where={"document_name": BUILTIN_SUMMARY_DOC}, include=[])
+        stale_ids = existing.get("ids", [])
+        if stale_ids:
+            col.delete(ids=stale_ids)
+            logger.warning(
+                "[STARTUP] purged %d chunk(s) of the retired built-in summary "
+                "from the index", len(stale_ids),
+            )
+    except Exception as exc:  # never block startup on a cleanup
+        logger.error("[STARTUP] could not purge built-in summary: %s", exc)
+
+
+# ── App lifespan ─────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Seed the built-in OAG knowledge base on first startup."""
+    """Start clean: drop the retired summary, then index the real corpus."""
     logger.info("🦅 Macho ya Mwananchi AI Service starting up…")
 
-    docs = ingest_module.list_ingested_documents()
-    built_in_present = any(
-        d.get("document_name") == "OAG_BUILTIN_NANDI_KNOWLEDGE"
-        for d in docs
-    )
+    _purge_builtin_summary()
 
-    if not built_in_present:
-        logger.info("[STARTUP] Seeding built-in OAG knowledge base into ChromaDB…")
-        result = ingest_module.ingest_text_directly(
-            text=OAG_SEED_TEXT,
-            document_name="OAG_BUILTIN_NANDI_KNOWLEDGE",
-            year="2018–2024",
-            source="OAG Kenya (Built-in)",
-        )
-        logger.info(f"[STARTUP] ✅ Built-in OAG knowledge seeded: {result['chunks_created']} chunks")
-    else:
-        logger.info("[STARTUP] Built-in OAG knowledge already present — skipping seed")
-
-    # The 46 OAG PDFs ship inside the image, but chroma_db/ is gitignored and
-    # Render's free tier gives the container an ephemeral disk — so every cold
-    # start comes up with only the built-in blob indexed and the real corpus
-    # missing. ingest_all is idempotent and designed to run on deploy; kick it
-    # off in the background so the health check answers immediately.
+    # The corpus is normally baked into the index at build time (see the
+    # buildCommand in render.yaml and the RUN step in the Dockerfile), which
+    # is what makes it survive a cold start on an ephemeral disk.
     #
-    # Off by default: re-embedding ~1,600 chunks on every cold start burns the
-    # Gemini free-tier quota. Turn it on once the index is persisted somewhere
-    # that survives a restart (build-time bake, Render disk, or a hosted vector
-    # store) — see docs. Set INGEST_CORPUS_ON_STARTUP=1 to enable.
+    # This flag is the escape hatch for environments where the build step did
+    # not run. Embeddings are computed locally by ChromaDB's ONNX model, so
+    # ingestion costs CPU time, not API quota — but it takes minutes, so it
+    # runs in a background thread and the health check answers immediately.
+    # Off by default. Set INGEST_CORPUS_ON_STARTUP=1 to enable.
     if os.getenv("INGEST_CORPUS_ON_STARTUP") == "1":
         import threading, subprocess, sys as _sys
 
@@ -224,12 +100,16 @@ async def lifespan(app: FastAPI):
 
         threading.Thread(target=_ingest_corpus, daemon=True).start()
     else:
-        logger.warning(
-            "[STARTUP] corpus ingestion disabled — answers come from the "
-            "built-in summary only. Set INGEST_CORPUS_ON_STARTUP=1 to index "
-            "the %d OAG PDFs shipped in ./documents.",
-            len(list((Path(__file__).parent / "documents").glob("*.pdf"))),
-        )
+        indexed = len({d.get("document_name") for d in ingest_module.list_ingested_documents()})
+        shipped = len(list((Path(__file__).parent / "documents").glob("*.pdf")))
+        if indexed:
+            logger.info("[STARTUP] %d document(s) indexed from %d shipped PDFs", indexed, shipped)
+        else:
+            logger.error(
+                "[STARTUP] index is EMPTY — %d PDFs shipped but none indexed. "
+                "Audit AI will decline every question until the corpus is built. "
+                "Run ingest_all.py, or set INGEST_CORPUS_ON_STARTUP=1.", shipped,
+            )
 
     logger.info("🤖 AI service ready on http://localhost:8001")
     logger.info("   'Ukweli ni nguvu.' — The truth is power.")

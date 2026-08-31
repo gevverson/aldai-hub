@@ -59,6 +59,7 @@ def main():
 
     total_docs = total_chunks = 0
     skipped = 0
+    empty: list[str] = []   # PDFs with no extractable text layer
     for pdf in pdfs:
         doc_name, year = meta_from_filename(pdf.name)
         if doc_name in indexed:
@@ -72,19 +73,40 @@ def main():
                 year=year,
                 source="Office of the Auditor-General, Kenya",
             )
+            chunks = result.get("chunks_created", 0)
             total_docs += 1
-            total_chunks += result.get("chunks_created", 0)
-            logger.info(
-                f"✅ {doc_name}: {result.get('chunks_created', 0)} chunks, "
-                f"{result.get('pages_processed', 0)} pages"
-            )
+            total_chunks += chunks
+            if chunks == 0:
+                # A scanned PDF with no text layer extracts to nothing and would
+                # otherwise be counted as ingested while contributing zero
+                # searchable content — the AI would simply never cite it.
+                empty.append(pdf.name)
+                logger.warning(
+                    f"⚠️  {doc_name}: 0 chunks — no extractable text "
+                    f"(scanned image?). This report will NOT be searchable."
+                )
+            else:
+                logger.info(
+                    f"✅ {doc_name}: {chunks} chunks, "
+                    f"{result.get('pages_processed', 0)} pages"
+                )
         except Exception as e:
             logger.error(f"❌ {pdf.name}: {e}")
 
     logger.info(
-        f"\nDone. Ingested {total_docs} documents "
+        f"\nDone. Ingested {total_docs - len(empty)} searchable documents "
         f"({total_chunks} chunks), skipped {skipped} already-indexed."
     )
+    if empty:
+        logger.warning(
+            f"\n⚠️  {len(empty)} PDF(s) yielded no text and are not searchable:"
+        )
+        for name in empty:
+            logger.warning(f"     - {name}")
+        logger.warning(
+            "   These need OCR before the AI can cite them. Until then the "
+            "platform holds them but cannot answer questions from them."
+        )
 
 
 if __name__ == "__main__":

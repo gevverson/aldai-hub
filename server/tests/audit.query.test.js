@@ -85,7 +85,7 @@ test('falls back to Gemini direct answer when Python RAG fails', async () => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.success, true);
-    assert.equal(body.service, 'gemini-direct-fallback');
+    assert.equal(body.service, 'unsourced-answer-refused');
     assert.equal(body.answer, 'gemini fallback answer');
   });
 });

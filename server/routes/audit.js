@@ -9,9 +9,7 @@
 
 import crypto from 'crypto';
 import express from 'express';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
-import OAG_CONTEXT from '../data/oag_context.js';
 
 dotenv.config();
 
@@ -94,7 +92,7 @@ function validateAuditConfig({
   }
 
   if (!env.GEMINI_API_KEY) {
-    const message = 'GEMINI_API_KEY is not set; direct Gemini fallback cannot answer when Python service fails.';
+    const message = 'GEMINI_API_KEY is not set; the Python RAG service will not be able to answer questions.';
     if (strict) throw new Error(message);
     warnings.push(message);
   }
@@ -102,92 +100,45 @@ function validateAuditConfig({
   return { warnings };
 }
 
-const FALLBACK_SYSTEM = `You are a civic accountability assistant for Nandi County and Aldai
-Constituency in Kenya. You help citizens understand how public funds were misused,
-based ONLY on official Auditor-General reports.
-
-Format EVERY answer exactly:
-
-📋 JIBU (Answer):
-[Plain language, max 3 sentences. Be specific: amounts, locations, names.]
-
-💰 PESA ILIYOHUSIKA (Money Involved):
-Ksh [amount] — [what it was for]
-
-📍 MAHALI (Where):
-[Ward / location / facility]
-
-🚨 UZITO WA TATIZO (Severity):
-[CHINI / KATI / JUU / MUHIMU SANA] — [one sentence why]
-
-📄 CHANZO (Source):
-[Document name] — Ukurasa [page number]
-
-👉 UNACHOWEZA KUFANYA (What You Can Do):
-- EACC (bure/free): 0800 720 629
-- DCI: 0800 722 203
-- [specific relevant action]
-
-Rules:
-- If question is Swahili → answer in Swahili
-- If English → answer in English
-- Only use facts from the OAG context provided
-- Never soften the truth
-- Never mention internal system architecture
-
-OAG CONTEXT:
-${OAG_CONTEXT}`;
+// When the Python RAG service is unreachable, this router used to ask Gemini
+// the citizen's question directly, priming it with a hand-written summary of
+// Nandi audit findings (server/data/oag_context.js, now deleted). That summary
+// named individual officers as responsible for fraud and quoted an EACC
+// tracking code that appears nowhere in the 46 signed Auditor-General PDFs
+// this platform ships — and because the Python service was down from June to
+// August 2026, this was the path actually answering citizens.
+//
+// A prompt-only fallback cannot be made safe: the answer template requires an
+// amount, a ward and a page number, so a model with no retrieved document will
+// invent all three and format them exactly like a real citation. Retired in
+// favour of saying plainly that the documents are unreachable.
+//
+// The seam is kept: `geminiFallbackFn` still overrides this (used by tests),
+// and the response shape is unchanged.
+const UNAVAILABLE_ANSWER = [
+  '📋 JIBU (Answer):',
+  'Samahani — siwezi kufikia hati za ukaguzi kwa sasa, kwa hivyo siwezi kujibu swali hili.',
+  'Ninajibu tu kutoka ripoti za Mkaguzi Mkuu wa Serikali — sitakisii.',
+  '',
+  'Sorry — I cannot reach the audit documents right now, so I cannot answer this question.',
+  'I only answer from the Auditor-General reports themselves — I do not guess.',
+  '',
+  '👉 UNACHOWEZA KUFANYA (What You Can Do):',
+  '- EACC (Kupiga simu bure / Free call): 0800 720 629',
+  '- DCI (Uchunguzi wa uhalifu / Criminal investigations): 0800 722 203',
+  '- Tembelea ukurasa wa Findings kuona ripoti zilizothibitishwa / Browse the Findings page for verified report data',
+].join('\n');
 
 function buildGeminiFallback(geminiApiKey, { geminiFallbackFn } = {}) {
   if (geminiFallbackFn) return geminiFallbackFn;
 
-  let genAI;
-  if (geminiApiKey) {
-    genAI = new GoogleGenerativeAI(geminiApiKey);
-  }
-
-  // Try each model in order — if one is rate-limited, fall through to the next.
-  // Models have separate per-day quotas so exhausting one doesn't kill the others.
-  const MODEL_CASCADE = [
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-  ];
-
-  return async function geminiDirectFallback(question) {
-    if (!genAI) {
-      return {
-        answer: '📋 JIBU: Samahani — huduma ya AI haipo available sasa hivi. Tafadhali jaribu tena baadaye.\n\n👉 UNACHOWEZA KUFANYA:\n- EACC: 0800 720 629 (bure)\n- DCI: 0800 722 203',
-        fallback: true,
-        model: 'unavailable',
-      };
-    }
-
-    let lastErr;
-    for (const modelName of MODEL_CASCADE) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: FALLBACK_SYSTEM,
-        });
-        const result = await model.generateContent(question);
-        return {
-          answer: result.response.text(),
-          fallback: true,
-          model: `${modelName}-direct`,
-          sources: [],
-        };
-      } catch (err) {
-        // 429 rate-limit → try next model; anything else → rethrow immediately
-        const is429 = err?.status === 429 || err?.message?.includes('429') ||
-                      err?.message?.toLowerCase().includes('quota') ||
-                      err?.message?.toLowerCase().includes('exhausted');
-        if (!is429) throw err;
-        lastErr = err;
-      }
-    }
-    throw lastErr;
+  return async function unsourcedAnswerRefused() {
+    return {
+      answer: UNAVAILABLE_ANSWER,
+      fallback: true,
+      model: 'unavailable',
+      sources: [],
+    };
   };
 }
 
@@ -393,8 +344,8 @@ export function createAuditRouter({
         language: language || 'auto',
         response_time_ms: elapsed,
         model: fallback.model,
-        service: 'gemini-direct-fallback',
-        note: 'Python RAG service offline — using built-in knowledge base',
+        service: 'unsourced-answer-refused',
+        note: 'Python RAG service offline — no audit documents reachable, so no answer was generated',
         request_id: requestId,
       });
     } catch (geminiErr) {
@@ -477,11 +428,11 @@ export function createAuditRouter({
     try {
       const pyRes = await fetchImpl(`${aiUrl}/health`, { signal: AbortSignal.timeout(4000) });
       const data = await pyRes.json();
-      return res.json({ python_service: 'online', ...data, fallback: geminiApiKey ? 'gemini-direct-fallback' : 'unavailable' });
+      return res.json({ python_service: 'online', ...data, fallback: 'unsourced-answer-refused' });
     } catch {
       return res.json({
         python_service: 'offline',
-        fallback: geminiApiKey ? 'gemini-direct-fallback' : 'unavailable',
+        fallback: 'unsourced-answer-refused',
         note: 'Direct Gemini fallback active',
       });
     }

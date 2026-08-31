@@ -63,7 +63,18 @@ services:
     name: macho-ya-mwananchi-ai
     runtime: python
     rootDir: ai-service
-    buildCommand: pip install -r requirements.txt
+    # Build the vector index here, not at runtime. Render's free tier gives the
+    # container an ephemeral disk, so anything indexed after boot is lost on the
+    # next cold start — which is why Audit AI used to answer from a hand-written
+    # summary. Embeddings are computed locally (ONNX), so this costs build
+    # minutes, not API quota, and the finished chroma_db/ ships with the deploy.
+    #
+    # Measured: ~5 min for 46 PDFs → 3,003 chunks (23 MB index) on a developer
+    # laptop; expect longer on the free tier's shared CPU. If a deploy ever
+    # times out here, the fallback is to commit ai-service/chroma_db/ (drop it
+    # from .gitignore) and remove ingest_all.py from this build command.
+    # ingest_all.py is idempotent, so re-running it is always safe.
+    buildCommand: pip install -r requirements.txt && python ingest_all.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
     envVars:
