@@ -22,7 +22,18 @@ from ingest import get_collection
 logger = logging.getLogger(__name__)
 
 # ── Gemini configuration ──────────────────────────────────────
-MODEL        = "gemini-2.0-flash"
+# Google retires Gemini models on a rolling schedule and the API then answers
+# 404 for the old name — gemini-2.0-flash was shut down on 1 June 2026 and took
+# this endpoint down with it, silently, for months. Try the chain in order and
+# remember whichever one answers, so a future retirement degrades to the next
+# model instead of taking Audit AI offline. Override with GEMINI_MODEL.
+MODEL_CHAIN = [
+    m.strip() for m in os.getenv(
+        "GEMINI_MODEL",
+        "gemini-3.6-flash,gemini-3.7-flash,gemini-flash-latest",
+    ).split(",") if m.strip()
+]
+MODEL        = MODEL_CHAIN[0]   # reported in responses; updated on fallback
 TOP_K_CHUNKS = 6
 
 # ── System prompt ─────────────────────────────────────────────
@@ -153,27 +164,47 @@ async def answer_question(
         logger.warning("[QUERY] No GEMINI_API_KEY — returning mock response")
         return _mock_response(lang, sources_data, start)
 
+    global MODEL
     try:
         genai.configure(api_key=api_key)
-        model_client = genai.GenerativeModel(
-            model_name=MODEL,
-            system_instruction=SYSTEM_PROMPT,
-        )
-        response    = model_client.generate_content(user_message)
-        answer_text = response.text
-        elapsed_ms  = int((time.time() - start) * 1000)
 
-        logger.info(
-            f"[QUERY] ✅ {elapsed_ms}ms | lang={lang} | "
-            f"sources={len(sources_data)} | model={MODEL}"
-        )
-        return {
-            "answer":           answer_text,
-            "sources":          sources_data,
-            "language":         lang,
-            "response_time_ms": elapsed_ms,
-            "model":            MODEL,
-        }
+        last_error = None
+        for candidate in MODEL_CHAIN:
+            try:
+                model_client = genai.GenerativeModel(
+                    model_name=candidate,
+                    system_instruction=SYSTEM_PROMPT,
+                )
+                response    = model_client.generate_content(user_message)
+                answer_text = response.text
+            except Exception as model_err:
+                # A retired or unknown model name is a 404 / NOT_FOUND. Anything
+                # else (auth, quota, safety) is real and must not be masked by
+                # walking the chain.
+                msg = str(model_err)
+                if "404" in msg or "NOT_FOUND" in msg or "no longer available" in msg:
+                    logger.warning(f"[QUERY] model {candidate} unavailable, trying next")
+                    last_error = model_err
+                    continue
+                raise
+            else:
+                if candidate != MODEL:
+                    logger.warning(f"[QUERY] falling back to model {candidate}")
+                    MODEL = candidate
+                elapsed_ms = int((time.time() - start) * 1000)
+                logger.info(
+                    f"[QUERY] ✅ {elapsed_ms}ms | lang={lang} | "
+                    f"sources={len(sources_data)} | model={candidate}"
+                )
+                return {
+                    "answer":           answer_text,
+                    "sources":          sources_data,
+                    "language":         lang,
+                    "response_time_ms": elapsed_ms,
+                    "model":            candidate,
+                }
+
+        raise last_error if last_error else RuntimeError("no Gemini model configured")
 
     except Exception as e:
         err = str(e)

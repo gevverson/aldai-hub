@@ -201,6 +201,36 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("[STARTUP] Built-in OAG knowledge already present — skipping seed")
 
+    # The 46 OAG PDFs ship inside the image, but chroma_db/ is gitignored and
+    # Render's free tier gives the container an ephemeral disk — so every cold
+    # start comes up with only the built-in blob indexed and the real corpus
+    # missing. ingest_all is idempotent and designed to run on deploy; kick it
+    # off in the background so the health check answers immediately.
+    #
+    # Off by default: re-embedding ~1,600 chunks on every cold start burns the
+    # Gemini free-tier quota. Turn it on once the index is persisted somewhere
+    # that survives a restart (build-time bake, Render disk, or a hosted vector
+    # store) — see docs. Set INGEST_CORPUS_ON_STARTUP=1 to enable.
+    if os.getenv("INGEST_CORPUS_ON_STARTUP") == "1":
+        import threading, subprocess, sys as _sys
+
+        def _ingest_corpus():
+            logger.info("[STARTUP] background corpus ingestion started")
+            try:
+                subprocess.run([_sys.executable, "ingest_all.py"], check=True, cwd=str(Path(__file__).parent))
+                logger.info("[STARTUP] ✅ corpus ingestion finished")
+            except Exception as exc:
+                logger.error(f"[STARTUP] corpus ingestion failed: {exc}")
+
+        threading.Thread(target=_ingest_corpus, daemon=True).start()
+    else:
+        logger.warning(
+            "[STARTUP] corpus ingestion disabled — answers come from the "
+            "built-in summary only. Set INGEST_CORPUS_ON_STARTUP=1 to index "
+            "the %d OAG PDFs shipped in ./documents.",
+            len(list((Path(__file__).parent / "documents").glob("*.pdf"))),
+        )
+
     logger.info("🤖 AI service ready on http://localhost:8001")
     logger.info("   'Ukweli ni nguvu.' — The truth is power.")
     yield
