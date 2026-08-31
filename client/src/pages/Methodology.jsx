@@ -212,7 +212,7 @@ const Methodology = () => {
                 audit does not. We add the update without deleting the record.</span></li>
             </ul>
             <p style={{ color: '#9CA3AF', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
-              Contact: <a href="mailto:corrections@machoyamwananchi.org" className="underline underline-offset-2 hover:text-amber-400" style={{ color: '#D97706' }}>corrections@machoyamwananchi.org</a>
+              Contact: <a href="mailto:gevversonkipkoech83@gmail.com" className="underline underline-offset-2 hover:text-amber-400" style={{ color: '#D97706' }}>gevversonkipkoech83@gmail.com</a>
             </p>
           </Card>
 

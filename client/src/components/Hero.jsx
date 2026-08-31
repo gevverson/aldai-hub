@@ -154,7 +154,13 @@ const Hero = ({ globalStats }) => {
             variants={fadeUp}
             className="flex flex-wrap items-center justify-center gap-3 mb-12"
           >
-            <StatPill value="Ksh 3.3B" label="STOLEN" isAlert />
+            {/* "STOLEN" stated as settled fact what the badge above this
+                calls an active EACC investigation. Theft is a conclusion a
+                court reaches; the platform's own Methodology page rests its
+                legal position on reporting what the Auditor-General found,
+                which is that the money is unaccounted for. That is the claim
+                the evidence carries, and it is not a softer one. */}
+            <StatPill value="Ksh 3.3B" label="UNACCOUNTED FOR" isAlert />
             <StatPill value="144" label="FACILITIES CLOSED" isAlert />
             <StatPill value="1,885" label="GHOST WORKERS" isAlert />
           </motion.div>

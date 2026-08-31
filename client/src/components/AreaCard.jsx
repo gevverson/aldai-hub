@@ -13,6 +13,12 @@ const AreaCard = ({ area, to, kicker }) => {
   const hasData = hasProjects || findingsOnly;   // clickable if either exists
   const health = HEALTH[healthOf(area)];
   const pct = flaggedPct(area);
+  // How much of this area's register the auditor actually reached a
+  // conclusion on. A percentage over zero checked projects is not a finding
+  // about the area, and must not be drawn as one.
+  const verified = area.verifiedCount ?? area.projectCount ?? 0;
+  const unverified = area.unverifiedCount ?? 0;
+  const unverifiedOnly = (area.projectCount ?? 0) > 0 && verified === 0;
 
   const body = (
     <div
@@ -95,10 +101,10 @@ const AreaCard = ({ area, to, kicker }) => {
                   className="font-semibold uppercase tracking-wide"
                   style={{ color: '#6B7280', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  Flagged by auditor
+                  {unverifiedOnly ? 'Not yet verified' : 'Flagged, of those checked'}
                 </span>
                 <span className="font-mono-jet font-bold" style={{ color: health.bar, fontSize: '12px' }}>
-                  {pct}%
+                  {unverifiedOnly ? '—' : `${pct}%`}
                 </span>
               </div>
               <div className="w-full rounded-full overflow-hidden" style={{ background: '#1F2937', height: '6px' }}>
@@ -113,6 +119,19 @@ const AreaCard = ({ area, to, kicker }) => {
                   style={{ color: '#6B7280', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
                 >
                   {formatKsh(area.flaggedValue)} attached to flagged projects
+                </p>
+              )}
+              {/* Say how much of the register the percentage rests on. Without
+                  this, a share computed over three checked projects looks
+                  identical to one computed over three hundred. */}
+              {unverified > 0 && (
+                <p
+                  className="mt-1.5"
+                  style={{ color: '#6B7280', fontSize: '11px', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {unverifiedOnly
+                    ? `${unverified} project${unverified === 1 ? '' : 's'} on record — the auditor recorded no result for any of them`
+                    : `${verified} of ${area.projectCount} checked · ${unverified} not verified`}
                 </p>
               )}
             </div>

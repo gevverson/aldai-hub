@@ -5,7 +5,18 @@ import { counties, findCounty } from '../data/geography.js';
 
 const router = express.Router();
 
-const NEGATIVE = ['GHOST PROJECT', 'STALLED', 'ABANDONED', 'INCOMPLETE', 'DISPUTED', 'MISALLOCATED'];
+// Statuses the auditor recorded as an adverse outcome.
+// IRREGULAR was missing from this list, so projects the auditor called
+// irregular were counted the same as projects found in good order.
+const NEGATIVE = [
+  'GHOST PROJECT', 'STALLED', 'ABANDONED', 'INCOMPLETE',
+  'DISPUTED', 'MISALLOCATED', 'IRREGULAR',
+];
+
+// A project the auditor confirmed in good order. Everything that is neither
+// NEGATIVE nor CLEAN — 'REPORTED — SEE NOTE', 'REPORTED — NO VERIFICATION
+// RESULT' — was reported but never checked, and must not be scored either way.
+const CLEAN = ['COMPLETE'];
 
 /** Count of audit findings grouped by a field — Map keyed by the grouped value. */
 async function findingRollup(match, groupField) {
@@ -37,6 +48,22 @@ async function rollup(match, groupField) {
         flaggedValue: {
           $sum: { $cond: [{ $in: ['$communityStatus', NEGATIVE] }, '$allocated', 0] },
         },
+        // Projects that actually carry a verification outcome. The health
+        // score divides by this, not by projectCount: 30% of the register has
+        // no result, and counting those as "not flagged" silently improved
+        // every county's score — Kisii showed 0% flagged and "Mostly Verified"
+        // on 15 projects of which not one had been verified.
+        verifiedCount: {
+          $sum: {
+            $cond: [
+              { $or: [
+                { $in: ['$communityStatus', NEGATIVE] },
+                { $in: ['$communityStatus', CLEAN] },
+              ] },
+              1, 0,
+            ],
+          },
+        },
       },
     },
   ]);
@@ -49,6 +76,10 @@ const shape = (stats, findingCount = 0) => ({
   ghostCount:     stats?.ghostCount     ?? 0,
   flaggedCount:   stats?.flaggedCount   ?? 0,
   flaggedValue:   stats?.flaggedValue   ?? 0,
+  verifiedCount:  stats?.verifiedCount  ?? 0,
+  // Reported in the register but never verified either way. Surfaced so a
+  // reader can see how much of the score rests on nothing.
+  unverifiedCount: Math.max(0, (stats?.projectCount ?? 0) - (stats?.verifiedCount ?? 0)),
   findingCount,
 });
 
