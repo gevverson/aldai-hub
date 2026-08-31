@@ -57,7 +57,11 @@ FS_PART = "Report On The Financial Statements"
 # "1. Heading Text" / "4.1 Heading Text" — a numbered finding.
 NUMBERED = re.compile(r"^\s*(\d+(?:\.\d+)?)[\.\)]?\s{1,6}([A-Z][^\n]{4,110})\s*$")
 
-MONEY = re.compile(r"Kshs?\.?\s?([\d,]+(?:\.\d+)?)", re.I)
+# Amount parsing lives in money.py: the OAG text layer routinely breaks
+# thousands groups ("Kshs.9, 207,193"), writes decimals as commas
+# ("Kshs.47,428,765,52") and word-scales figures ("Kshs.3 million").
+# Naive comma-stripping turned those into 1,000,000x errors.
+from money import MONEY, parse_amount  # noqa: E402
 
 # The older (pre-2018) reports embed detail tables — "school | date | voucher |
 # purpose | amount" — whose rows also start with a number and a capital letter.
@@ -113,11 +117,18 @@ def extract(pdf: Path):
             # Keep document order — the first figure quoted is the one the
             # finding is actually about; sorting by size misattributes it.
             seen, ordered = set(), []
-            for a in MONEY.findall(body):
-                v = a.replace(",", "")
-                if v not in seen:
-                    seen.add(v)
-                    ordered.append(v)
+            for m in MONEY.finditer(body):
+                # A match that stops mid-number means the digit grouping is
+                # corrupt; refuse it rather than emit a mangled figure.
+                tail = body[m.end(1):m.end(1) + 2]
+                if re.match(r"\d|[.,]\d", tail):
+                    continue
+                val, _conf = parse_amount(m.group(1), m.group(2))
+                if val is None or val <= 0:
+                    continue
+                if val not in seen:
+                    seen.add(val)
+                    ordered.append(str(val))
             finding["amounts_kshs"] = ordered[:8]
             findings.append(finding)
         finding = None

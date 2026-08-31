@@ -22,12 +22,25 @@ test.describe('geography drill-down', () => {
     await expect(page.getByRole('link', { name: /Uasin Gishu/i }).first()).toBeVisible();
   });
 
-  test('counties with no data are shown honestly as "coming soon", not fake zeros', async ({ page }) => {
+  test('counties without a project register are shown honestly, not as fake zeros', async ({ page }) => {
     await page.goto(`${BASE}/counties`);
-    // The national catalogue lists every county; those without ingested data
-    // appear under a "Coming soon" section rather than as misleading zero cards.
-    await expect(page.getByRole('heading', { name: /Coming soon/i })).toBeVisible();
+
+    // The national catalogue lists every county. A county is only shown under
+    // "Live now" once it has an ingested project register; the many counties
+    // whose OAG reports are narrative-only sit under "Audit findings
+    // available" with their real cited findings, never as a misleading zero
+    // card. Counties with neither fall back to "Coming soon" — that section is
+    // absent whenever every county has some data, which is the current state.
+    await expect(page.getByRole('heading', { name: /Live now/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Audit findings available/i })).toBeVisible();
     await expect(page.getByText(/Mombasa/).first()).toBeVisible();
+
+    // Whichever tier a county lands in, it is never rendered as "0 projects"
+    // dressed up as a finished audit.
+    const comingSoon = page.getByRole('heading', { name: /Coming soon/i });
+    if (await comingSoon.count()) {
+      await expect(comingSoon.first()).toContainText(/Coming soon · \d+ counties/);
+    }
   });
 
   test('drills county -> constituency -> cited projects', async ({ page }) => {
