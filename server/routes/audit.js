@@ -422,14 +422,15 @@ export function createAuditRouter({
       const data = await pyRes.json();
       return res.json(data);
     } catch {
-      return res.json({
-        count: 1,
-        documents: [{
-          document_name: 'OAG_BUILTIN_NANDI_KNOWLEDGE',
-          year: '2018–2024',
-          source: 'OAG Kenya (Built-in)',
-        }],
-        note: 'Python RAG service offline — showing built-in documents only',
+      // Do not invent an inventory. This used to answer with a single
+      // fabricated entry named OAG_BUILTIN_NANDI_KNOWLEDGE — the hand-written
+      // summary that was retired — so a page that could not reach the index at
+      // all still told the reader a document was indexed and ready to be cited.
+      // An unreachable index is a fact the reader should get straight.
+      return res.status(503).json({
+        error: 'Document index unreachable',
+        count: 0,
+        documents: [],
       });
     }
   });

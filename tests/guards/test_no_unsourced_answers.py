@@ -66,6 +66,8 @@ check("audit route no longer imports it",
 check("no prompt-primed direct-Gemini answering",
       "GoogleGenerativeAI" not in audit_js)
 check("fallback declines instead of improvising", "UNAVAILABLE_ANSWER" in audit_js)
+check("no fabricated document inventory when the index is unreachable",
+      not re.search(r"document_name:\s*['\"]OAG_BUILTIN", audit_js))
 
 print("\nno fabricated attributions anywhere in shipped source")
 NAMED = ["GHOST-KIM", "Cornelius Serem", "Responsible Officer"]
