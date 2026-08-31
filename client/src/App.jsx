@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Link } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -15,6 +15,32 @@ import ConstituencyPage from './pages/ConstituencyPage';
 // Lazy-load the map — Leaflet is heavy, so keep it out of the initial bundle
 // for faster first paint on low-bandwidth mobile connections.
 const VerificationMap = lazy(() => import('./pages/VerificationMap'));
+
+// Any unmatched URL previously rendered nothing at all — a stale link or a
+// typo left the citizen staring at a bare header and footer with no clue what
+// went wrong. Send them somewhere useful instead.
+const NotFound = () => (
+  <div className="max-w-2xl mx-auto px-6 py-24 text-center">
+    <p className="text-sm tracking-widest uppercase" style={{ color: '#D97706' }}>
+      404 · Ukurasa haupatikani
+    </p>
+    <h1 className="mt-4 text-3xl font-bold">This page doesn't exist</h1>
+    <p className="mt-4" style={{ color: '#9CA3AF' }}>
+      The link may be out of date. Every county, constituency and audit finding
+      is reachable from the county list.
+    </p>
+    <div className="mt-8 flex flex-wrap gap-3 justify-center">
+      <Link to="/counties" className="px-5 py-2.5 rounded-lg font-semibold"
+            style={{ background: '#D97706', color: '#0A0A0A' }}>
+        Browse counties
+      </Link>
+      <Link to="/" className="px-5 py-2.5 rounded-lg font-semibold"
+            style={{ border: '1px solid #1F2937', color: '#F9FAFB' }}>
+        Home
+      </Link>
+    </div>
+  </div>
+);
 
 const RouteFallback = () => (
   <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
@@ -49,6 +75,7 @@ function App() {
               <VerificationMap />
             </Suspense>
           } />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
