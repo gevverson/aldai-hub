@@ -42,8 +42,12 @@ echo "Done"
 /playwright-report/
 /test-results/
 
-# Regenerable vector store — rebuild with ai-service/ingest_all.py
-ai-service/chroma_db/
+# The vector store is COMMITTED, deliberately. It is regenerable
+# (ai-service/ingest_all.py) but Render's free tier gives the container an
+# ephemeral disk, so an index built after boot does not survive a cold start —
+# which is how Audit AI ended up answering from a hand-written summary instead
+# of the reports. Shipping the built index is what makes the corpus reliably
+# present. Regenerate with `python ingest_all.py --force` when the PDFs change.
 server/data/seed.js.pre-merge.bak
 server/data/seed.js.pre-mombasa.bak
 server/data/seed.js.pre-batch3.bak

@@ -69,11 +69,18 @@ services:
     # summary. Embeddings are computed locally (ONNX), so this costs build
     # minutes, not API quota, and the finished chroma_db/ ships with the deploy.
     #
-    # Measured: ~5 min for 46 PDFs → 3,003 chunks (23 MB index) on a developer
-    # laptop; expect longer on the free tier's shared CPU. If a deploy ever
-    # times out here, the fallback is to commit ai-service/chroma_db/ (drop it
-    # from .gitignore) and remove ingest_all.py from this build command.
-    # ingest_all.py is idempotent, so re-running it is always safe.
+    # The built index is ALSO committed (ai-service/chroma_db/), because the
+    # first deploy after this build step was added came up with 0 documents —
+    # a Blueprint service does not necessarily pick up a changed buildCommand
+    # without a re-sync, and an empty index means the AI declines every
+    # question. Committing it makes the corpus present no matter what build
+    # command the service is actually running.
+    #
+    # This step stays because ingest_all.py is idempotent: with the committed
+    # index in place it skips all 45 documents in seconds, and it picks up any
+    # PDF added to ./documents without a manual rebuild. Measured cold: ~5 min
+    # for 46 PDFs → 3,003 chunks (23 MB) on a developer laptop.
+    # Regenerate by hand with: python ingest_all.py --force
     buildCommand: pip install -r requirements.txt && python ingest_all.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
