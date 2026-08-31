@@ -246,7 +246,18 @@ async def answer_question(
         if "API_KEY_INVALID" in err or "PERMISSION_DENIED" in err:
             return {"error": "AI service authentication failed. Check GEMINI_API_KEY."}
         if "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
-            return {"error": "AI service quota reached. Try again tomorrow (free tier: 1,500/day)."}
+            # Gemini reports a per-minute rate limit and a per-day quota with the
+            # same RESOURCE_EXHAUSTED status. Telling someone to "try again
+            # tomorrow" when the limit resets in sixty seconds sends them away
+            # for a day over a one-minute wait, so only say that when the error
+            # actually names the daily limit.
+            low = err.lower()
+            per_minute = "per minute" in low or "perminute" in low or "rate limit" in low
+            if per_minute:
+                logger.warning("[QUERY] Gemini per-minute rate limit hit")
+                return {"error": "Too many questions right now. Please try again in about a minute."}
+            logger.warning("[QUERY] Gemini quota exhausted: %s", err[:200])
+            return {"error": "AI service daily quota reached. Please try again tomorrow."}
         logger.error(f"[QUERY] Gemini error: {e}")
         return {"error": f"AI service error: {err[:120]}"}
 
