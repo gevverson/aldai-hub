@@ -22,7 +22,27 @@ dotenv.config();
 // wait on a request that was never going to be fast, and 2×25s was already
 // making people wait 50s to be told nothing.
 const TIMEOUT_MS = 75_000;
-const PYTHON_RETRY_ATTEMPTS = 1;
+
+// A cold start and a slow service fail differently, and only one of them is
+// worth retrying.
+//
+// The free tier sleeps after 15 minutes, and the keep-alive workflow does not
+// prevent it: it claims a 10-minute cron but GitHub throttles scheduled runs on
+// free runners to a measured median of ~4 hours, so the service is asleep for
+// most of the day. The first request to a sleeping service is what wakes it —
+// Render answers 502/503 within seconds while the container boots, and the
+// observed failures come back in ~12s, nowhere near TIMEOUT_MS. Retrying *that*
+// is nearly free and usually succeeds, because the previous attempt did the
+// waking. Without it a citizen's first question — often their only one —
+// returns "I cannot reach the audit documents" perhaps half the time.
+//
+// A timeout is the opposite case: the service is awake and simply slow, and a
+// second 75s wait only makes someone wait twice to be told the same thing. So
+// AbortError never retries, and neither does any failure that took longer than
+// the window below — by then we are no longer looking at a cold start.
+const COLD_START_RETRY_WINDOW_MS = 20_000;
+const COLD_START_RETRY_DELAY_MS  = 2_000;
+const PYTHON_RETRY_ATTEMPTS = 2;
 const GEMINI_RETRY_ATTEMPTS = 2;
 const RETRY_BASE_DELAY_MS = 350;
 
@@ -41,6 +61,28 @@ function createAuditError(message, extra = {}) {
   const err = new Error(message);
   Object.assign(err, extra);
   return err;
+}
+
+function isColdStartFailure(err) {
+  if (!err) return false;
+
+  // Awake but slow — see COLD_START_RETRY_WINDOW_MS.
+  if (err.name === 'AbortError') return false;
+  if (typeof err.elapsedMs === 'number' && err.elapsedMs >= COLD_START_RETRY_WINDOW_MS) {
+    return false;
+  }
+
+  // What Render returns while a sleeping container is starting.
+  if (typeof err.status === 'number') return [502, 503, 504].includes(err.status);
+
+  const text = `${err.message || ''}`.toLowerCase();
+  return (
+    text.includes('econnrefused') ||
+    text.includes('econnreset') ||
+    text.includes('socket hang up') ||
+    text.includes('fetch failed') ||
+    text.includes('network')
+  );
 }
 
 function isTransientError(err) {
@@ -256,6 +298,7 @@ export function createAuditRouter({
       const pyRes = await withRetry(async () => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        const attemptStart = Date.now();
         try {
           const response = await fetchImpl(`${aiUrl}/query`, {
             method: 'POST',
@@ -273,13 +316,18 @@ export function createAuditRouter({
           }
 
           return response;
+        } catch (err) {
+          // How long the attempt took is what separates "still booting" from
+          // "awake but slow"; the error itself does not say.
+          if (err && err.elapsedMs === undefined) err.elapsedMs = Date.now() - attemptStart;
+          throw err;
         } finally {
           clearTimeout(timeout);
         }
       }, {
         attempts: PYTHON_RETRY_ATTEMPTS,
-        baseDelayMs: RETRY_BASE_DELAY_MS,
-        shouldRetry: isTransientError,
+        baseDelayMs: COLD_START_RETRY_DELAY_MS,
+        shouldRetry: isColdStartFailure,
         onRetry: ({ attempt, waitMs, error }) => {
           telemetry('warn', {
             event: 'python_retry',

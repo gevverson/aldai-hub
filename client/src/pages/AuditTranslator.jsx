@@ -488,6 +488,21 @@ const AuditTranslator = () => {
     }
   }, [location.state]);
 
+  // Wake the RAG service as soon as the page opens.
+  //
+  // The free tier sleeps after 15 minutes of inactivity and takes roughly a
+  // minute to come back, so the first question of the day is usually the one
+  // that pays for the wake-up — and often fails while the container is still
+  // booting. Someone reading the page and typing a question spends far longer
+  // than that, so starting the service now means it is normally ready by the
+  // time they press send. Fire-and-forget: a failure here changes nothing, the
+  // query path retries a cold start on its own.
+  useEffect(() => {
+    const cancel = new AbortController();
+    fetch('/api/audit/status', { signal: cancel.signal }).catch(() => {});
+    return () => cancel.abort();
+  }, []);
+
   // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
