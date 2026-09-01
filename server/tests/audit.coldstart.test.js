@@ -144,3 +144,42 @@ test('a persistently down service still declines rather than improvising', async
     assert.deepEqual(body.sources, [], 'no sources must ever be invented');
   });
 });
+
+test('an unrecognised fast failure is retried — do not enumerate the upstream vocabulary', async () => {
+  // The regression this file exists for. The first version of isColdStartFailure
+  // matched on 502/503/504 and a list of error substrings. In production the
+  // suspended service returned something that was on none of those lists, the
+  // predicate said "not a cold start", and the retry never ran even once —
+  // every first question of the day was lost. Speed, not vocabulary, decides.
+  let calls = 0;
+  const router = createAuditRouter({
+    aiUrl: 'http://python.local',
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) throw new Error('upstream returned something nobody predicted');
+      return ragResponse();
+    },
+    geminiFallbackFn: async () => ({ answer: 'REFUSED', model: 'unavailable', sources: [] }),
+  });
+
+  await withServer(router, async (baseUrl) => {
+    const body = await (await ask(baseUrl)).json();
+    assert.equal(calls, 2, 'a fast failure must be retried whatever it says');
+    assert.equal(body.answer, 'cited answer');
+  });
+});
+
+test('a decline reports why the RAG service was unreachable', async () => {
+  const router = createAuditRouter({
+    aiUrl: 'http://python.local',
+    fetchImpl: async () => new Response('Bad Gateway', { status: 502 }),
+    geminiFallbackFn: async () => ({ answer: 'REFUSED', model: 'unavailable', sources: [] }),
+  });
+
+  await withServer(router, async (baseUrl) => {
+    const body = await (await ask(baseUrl)).json();
+    assert.equal(body.upstream_status, 502, 'an operator must be able to see the cause');
+    assert.equal(typeof body.upstream_ms, 'number');
+    assert.ok(!JSON.stringify(body).includes('python.local'), 'must not leak the internal URL');
+  });
+});
