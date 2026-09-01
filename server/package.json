@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "test": "node --test tests",
+    "test": "node --test",
     "seed": "node seed_db.js",
     "ai": "cd ../ai-service && ./venv/bin/uvicorn main:app --port 8002 --reload",
     "ai:seed": "cd ../ai-service && ./venv/bin/python -c \"from ingest import ingest_text_directly; print('DB ready')\""

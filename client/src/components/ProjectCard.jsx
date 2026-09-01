@@ -146,7 +146,7 @@ const ProjectCard = ({ project }) => {
         <VerifyModal
           project={project}
           onClose={() => setShowVerify(false)}
-          onSuccess={(v) => {
+          onSuccess={() => {
             setVerificationCount(prev => prev + 1);
             setShowVerify(false);
           }}

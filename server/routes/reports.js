@@ -43,10 +43,9 @@ router.get('/', async (req, res, next) => {
     const sortDir = sort === 'newest' ? { createdAt: -1 } : { createdAt: 1 };
     const skip    = (Number(page) - 1) * Number(limit);
 
-    const [docs, total] = await Promise.all([
-      Report.find(filter).sort(sortDir).skip(skip).limit(Number(limit)),
-      Report.countDocuments(filter),
-    ]);
+    // The response is a plain array (see below), so there is nowhere to put a
+    // total — don't pay for the count query.
+    const docs = await Report.find(filter).sort(sortDir).skip(skip).limit(Number(limit));
 
     // Transform to match frontend field contract
     const reports = docs.map((d) => ({

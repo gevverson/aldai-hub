@@ -16,6 +16,16 @@ const findingSchema = mongoose.Schema(
     heading:      { type: String, required: true },
     category:     { type: String, default: 'Audit Finding' },
     amountKsh:    { type: Number, default: null },
+
+    // Why `amountKsh` may disagree with the figure quoted inside `summary`.
+    // OAG text layers carry OCR damage that can inflate a number by orders of
+    // magnitude (a real case: 'Kshs.14,603,311,047,800' for a balance of
+    // 14,603,311). The repair pipeline fixes the headline figure but quotes the
+    // source text verbatim, so without this note the card appears to contradict
+    // itself. Set by ai-service/pipeline/repair_data.py; null for the ~99.7% of
+    // findings whose amount parsed cleanly.
+    amountNote:   { type: String, default: null },
+
     summary:      { type: String, required: true },
     source:       { type: String, required: true },   // OAG report + page citation
   },

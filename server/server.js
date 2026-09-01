@@ -161,8 +161,8 @@ app.use((req, res) => {
 });
 
 // ── Global error handler ──────────────────────────────────────
-// Must be last, must have 4 params
-// eslint-disable-next-line no-unused-vars
+// Must be last, must have 4 params — Express identifies the error handler by
+// arity, so `next` stays even though it is unused.
 app.use((err, req, res, next) => {
   console.error(`[ERROR] ${req.method} ${req.path} — ${err.message}`);
   if (!IS_PROD) console.error(err.stack);

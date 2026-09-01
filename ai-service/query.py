@@ -9,6 +9,10 @@ with a strict civic accountability system prompt.
 If retrieval returns nothing, the question is declined without calling the
 model at all — no chunk, no answer.
 
+Uses the `google-genai` SDK. Its predecessor, `google-generativeai`, is
+end-of-life and prints "All support has ended" on import — the same class of
+silent decay that retired gemini-2.0-flash out from under this service.
+
 Free tier: 1,500 requests/day — more than enough for this platform.
 Get your key at: https://aistudio.google.com/app/apikey
 """
@@ -18,7 +22,8 @@ import logging
 import time
 from typing import Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 
 from ingest import get_collection
 
@@ -148,16 +153,23 @@ async def answer_question(
             page      = meta.get("page_number", "?")
             year      = meta.get("year", "")
             relevance = f"{max(0, (1 - dist)) * 100:.0f}%"
+            # Chunks recovered from a page scan by OCR rather than read from the
+            # publisher's own text layer. Carried through to the citation so a
+            # reader can weigh a figure accordingly — OCR misreads digits, and
+            # digits are what this platform is for.
+            via_ocr   = meta.get("text_source") == "ocr"
 
             context_parts.append(
-                f"[SOURCE {i} | {doc_name} | {year} | Page {page} | Relevance: {relevance}]\n"
-                f"{doc.strip()}"
+                f"[SOURCE {i} | {doc_name} | {year} | Page {page} | Relevance: {relevance}"
+                + (" | TEXT RECOVERED BY OCR — treat exact figures with caution]" if via_ocr else "]")
+                + f"\n{doc.strip()}"
             )
             sources_data.append({
                 "document": doc_name,
                 "page":     page,
                 "year":     year,
                 "score":    round(float(dist), 4),
+                "via_ocr":  via_ocr,
             })
 
     except Exception as e:
@@ -201,23 +213,24 @@ async def answer_question(
 
     global MODEL
     try:
-        genai.configure(api_key=api_key)
+        client = genai.Client(api_key=api_key)
 
         last_error = None
         for candidate in MODEL_CHAIN:
             try:
-                model_client = genai.GenerativeModel(
-                    model_name=candidate,
-                    system_instruction=SYSTEM_PROMPT,
+                response = client.models.generate_content(
+                    model=candidate,
+                    contents=user_message,
+                    config=genai_types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                    ),
                 )
-                response    = model_client.generate_content(user_message)
                 answer_text = response.text
             except Exception as model_err:
                 # A retired or unknown model name is a 404 / NOT_FOUND. Anything
                 # else (auth, quota, safety) is real and must not be masked by
                 # walking the chain.
-                msg = str(model_err)
-                if "404" in msg or "NOT_FOUND" in msg or "no longer available" in msg:
+                if _is_model_unavailable(model_err):
                     logger.warning(f"[QUERY] model {candidate} unavailable, trying next")
                     last_error = model_err
                     continue
@@ -260,6 +273,34 @@ async def answer_question(
             return {"error": "AI service daily quota reached. Please try again tomorrow."}
         logger.error(f"[QUERY] Gemini error: {e}")
         return {"error": f"AI service error: {err[:120]}"}
+
+
+def _is_model_unavailable(err: Exception) -> bool:
+    """True only for 'this model name does not exist', which is safe to retry.
+
+    Checked against the SDK's structured fields first (`code` / `status`), and
+    only then against the message text. The message format belongs to Google and
+    has changed before; the day it changes again, string-only matching would stop
+    detecting a retired model and Audit AI would go dark rather than fall through
+    to the next candidate. That is precisely how gemini-2.0-flash took this
+    service offline for three months in 2026.
+
+    Auth, quota and safety errors deliberately return False — masking those by
+    walking the chain would turn one loud failure into three quiet ones.
+    """
+    code = getattr(err, "code", None)
+    if code == 404:
+        return True
+    status = getattr(err, "status", None)
+    if isinstance(status, str) and status.upper() == "NOT_FOUND":
+        return True
+    if code is not None or status is not None:
+        # Structured error from the SDK that is not a 404 — trust it, don't
+        # second-guess it with a substring scan of the message.
+        return False
+
+    msg = str(err)
+    return "404" in msg or "NOT_FOUND" in msg or "no longer available" in msg
 
 
 def _no_sources_response(lang: str, start: float, retrieval_failed: bool) -> dict:

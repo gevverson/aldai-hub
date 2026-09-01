@@ -12,6 +12,12 @@ const OPINION_TONE = (op = '') => {
   return { bg: 'rgba(22,163,74,0.12)', color: '#86EFAC', border: 'rgba(22,163,74,0.3)' };
 };
 
+/* An OCR-corrected figure needs an explanation, because the summary below it
+   quotes the source text verbatim — including the damaged number. Showing the
+   corrected total beside the corrupt quote with no note reads as the platform
+   contradicting itself, which costs more trust than the error it fixed. */
+const isCorrection = (note = '') => /corrected/i.test(note);
+
 const FindingCard = ({ f }) => (
   <div className="rounded-2xl overflow-hidden border" style={{ background: '#111827', borderColor: '#1F2937' }}>
     <div className="h-1 w-full" style={{ background: '#D97706' }} />
@@ -30,7 +36,28 @@ const FindingCard = ({ f }) => (
           </div>
         )}
       </div>
+      {f.amountNote && isCorrection(f.amountNote) && (
+        <div
+          className="rounded-lg px-3 py-2 mb-3 flex gap-2"
+          style={{ background: 'rgba(217,119,6,0.10)', border: '1px solid rgba(217,119,6,0.25)' }}
+        >
+          <span aria-hidden style={{ fontSize: '12px', lineHeight: 1.5 }}>&#9888;</span>
+          <p style={{ color: '#FCD34D', fontSize: '12px', lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif" }}>
+            <strong>Figure corrected.</strong> The Auditor-General&rsquo;s PDF has a damaged text
+            layer here, so the amount quoted in the extract below is wrong in the source. The
+            figure shown above is the corrected one.{' '}
+            <span style={{ color: '#9CA3AF' }}>{f.amountNote}</span>
+          </p>
+        </div>
+      )}
+
       <p className="text-sm leading-relaxed mb-3" style={{ color: '#D1D5DB' }}>{f.summary}</p>
+
+      {f.amountNote && !isCorrection(f.amountNote) && (
+        <p className="text-xs mb-2" style={{ color: '#6B7280', fontFamily: "'DM Sans', sans-serif" }}>
+          <span aria-hidden>&#8505;</span> {f.amountNote}
+        </p>
+      )}
       <p className="text-xs" style={{ color: '#6B7280', fontFamily: "'DM Sans', sans-serif" }}>
         <span aria-hidden>📄</span> {f.source}
       </p>

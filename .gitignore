@@ -1,4 +1,4 @@
-# Logs
+# ── Logs ──────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -7,20 +7,31 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Node modules
+# ── Node ──────────────────────────────────────────────────────
 node_modules
 dist
 dist-ssr
 *.local
 
-# Environment variables
+# ── Environment variables ─────────────────────────────────────
+# Never commit a real .env — only the .env.example templates.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
-# IDEs and Editors
+# ── Python ────────────────────────────────────────────────────
+# The virtualenv is a build artefact of requirements.txt, not source.
+# It was tracked until 2026-09-01 (16,166 files) and has been untracked;
+# recreate it with:
+#   python3 -m venv ai-service/venv
+#   ai-service/venv/bin/python -m pip install -r ai-service/requirements.txt
+ai-service/venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# ── IDEs and editors ──────────────────────────────────────────
 .vscode/
 .idea/
 *.suo
@@ -30,31 +41,18 @@ dist-ssr
 *.sw?
 .DS_Store
 
-# Mac
-.DS_Store
-
-# Playwright
-/playwright-report/
-/test-results/
-echo "Done"
-
-# Playwright
+# ── Playwright ────────────────────────────────────────────────
 /playwright-report/
 /test-results/
 
-# The vector store is COMMITTED, deliberately. It is regenerable
-# (ai-service/ingest_all.py) but Render's free tier gives the container an
-# ephemeral disk, so an index built after boot does not survive a cold start —
-# which is how Audit AI ended up answering from a hand-written summary instead
-# of the reports. Shipping the built index is what makes the corpus reliably
-# present. Regenerate with `python ingest_all.py --force` when the PDFs change.
+# ── Seed backups (rollback copies, regenerable) ───────────────
 server/data/seed.js.pre-merge.bak
 server/data/seed.js.pre-mombasa.bak
 server/data/seed.js.pre-batch3.bak
 server/data/seed.js.pre-batch4.bak
 server/data/seed.js.pre-batch5.bak
 
-# Pipeline intermediate/regenerable artifacts
+# ── Pipeline intermediate/regenerable artifacts ───────────────
 ai-service/pipeline/__pycache__/
 ai-service/pipeline/counties/*/corpus/
 ai-service/pipeline/counties/*/text/
@@ -62,3 +60,10 @@ ai-service/pipeline/_audit_check.py
 ai-service/pipeline/seed_generated.js
 ai-service/pipeline/seed_generated.json
 
+# ── NOT ignored, deliberately ─────────────────────────────────
+# ai-service/chroma_db/ is COMMITTED on purpose. It is regenerable
+# (ai-service/ingest_all.py) but Render's free tier gives the container an
+# ephemeral disk, so an index built after boot does not survive a cold start —
+# which is how Audit AI ended up answering from a hand-written summary instead
+# of the reports. Shipping the built index is what makes the corpus reliably
+# present. Regenerate with `python ingest_all.py --force` when the PDFs change.

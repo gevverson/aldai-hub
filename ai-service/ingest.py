@@ -10,6 +10,7 @@ Embedding strategy:
   No GPU needed. Works on any Nairobi VPS.
 """
 
+import json
 import logging
 import uuid
 from pathlib import Path
@@ -27,6 +28,12 @@ DOCUMENTS_DIR   = Path(__file__).parent / "documents"
 COLLECTION_NAME = "oag_audit_reports"
 CHUNK_SIZE      = 800
 CHUNK_OVERLAP   = 120
+
+# Sidecar OCR text for scanned reports, produced by ocr_pdf.py. A handful of OAG
+# reports are page scans with no embedded text layer; without this they sit in
+# the corpus, get counted as ingested, and can never be cited.
+OCR_DIR         = DOCUMENTS_DIR / "ocr"
+MIN_PAGE_CHARS  = 30
 
 
 def get_collection():
@@ -97,6 +104,23 @@ def ingest_text_directly(
     }
 
 
+def _load_ocr_sidecar(pdf_path: Path) -> dict:
+    """Page-number -> OCR text for a scanned PDF, or {} if there is no sidecar.
+
+    Kept separate from the PDF itself so the original document is never
+    modified: what the platform holds stays byte-identical to what the
+    Auditor-General published, and the machine-read text sits alongside it.
+    """
+    sidecar = OCR_DIR / f"{pdf_path.stem}.json"
+    if not sidecar.exists():
+        return {}
+    try:
+        return json.loads(sidecar.read_text()).get("pages", {}) or {}
+    except (OSError, ValueError) as e:
+        logger.warning(f"[INGEST] Unreadable OCR sidecar for {pdf_path.name}: {e}")
+        return {}
+
+
 def ingest_pdf(
     file_path: str,
     document_name: str,
@@ -127,12 +151,25 @@ def ingest_pdf(
     all_meta:   list[dict] = []
     pages_processed = 0
 
+    ocr_pages = _load_ocr_sidecar(path)
+    ocr_used  = 0
+
     logger.info(f"[INGEST] Opening: {path.name}")
     with pdfplumber.open(str(path)) as pdf:
         total_pages = len(pdf.pages)
         for page_num, page in enumerate(pdf.pages, start=1):
             text = page.extract_text()
-            if not text or len(text.strip()) < 30:
+            text_source = "pdf"
+
+            # Fall back to machine-read text only where the publisher's own text
+            # layer is absent — never in preference to it.
+            if (not text or len(text.strip()) < MIN_PAGE_CHARS) and ocr_pages:
+                ocr_text = ocr_pages.get(str(page_num))
+                if ocr_text and len(ocr_text.strip()) >= MIN_PAGE_CHARS:
+                    text, text_source = ocr_text, "ocr"
+                    ocr_used += 1
+
+            if not text or len(text.strip()) < MIN_PAGE_CHARS:
                 continue
             for idx, chunk in enumerate(splitter.split_text(text)):
                 all_chunks.append(chunk)
@@ -143,8 +180,15 @@ def ingest_pdf(
                     "page_number":   str(page_num),
                     "chunk_index":   str(idx),
                     "total_pages":   str(total_pages),
+                    # "ocr" marks text a machine read off a scan. OCR misreads
+                    # digits, and this platform's promise is about figures, so a
+                    # citation built on it must stay distinguishable.
+                    "text_source":   text_source,
                 })
             pages_processed += 1
+
+    if ocr_used:
+        logger.info(f"[INGEST] {ocr_used} page(s) of '{document_name}' read via OCR sidecar")
 
     if not all_chunks:
         logger.warning(f"[INGEST] No text found in '{document_name}' — may be image-scanned")
@@ -161,6 +205,7 @@ def ingest_pdf(
         "chunks_created":  len(all_chunks),
         "document_name":   document_name,
         "pages_processed": pages_processed,
+        "ocr_pages":       ocr_used,
     }
 
 

@@ -222,11 +222,17 @@ const WardSelector = () => {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
         const list = data?.data;
-        setWards(Array.isArray(list) && list.length > 0 ? list : FALLBACK_WARDS);
+        const usable = Array.isArray(list) && list.length > 0;
+        // FALLBACK_WARDS are hardcoded estimates, not audited figures. Whenever
+        // they are shown the reader must be told, or the platform is quietly
+        // presenting invented numbers in the one place it promises not to.
+        setWards(usable ? list : FALLBACK_WARDS);
+        setError(!usable);
         setLoading(false);
       })
       .catch(() => {
         setWards(FALLBACK_WARDS);
+        setError(true);
         setLoading(false);
       });
   }, []);

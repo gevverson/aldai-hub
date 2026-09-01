@@ -33,7 +33,7 @@ const FlyToProject = ({ coords }) => {
 const VerificationMap = () => {
   const [projects, setProjects] = useState([]);
   const [verifications, setVerifications] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [totalProjects, setTotalProjects] = useState(0);
   const [verifyTarget, setVerifyTarget] = useState(null);
   const [flyTarget, setFlyTarget] = useState(null);
   const [filter, setFilter] = useState('ALL');
@@ -48,7 +48,9 @@ const VerificationMap = () => {
         ]);
         const projData = await projRes.json();
         const verData = await verRes.json();
-        setProjects((projData.data || []).filter(p => p.lat && p.lng));
+        const all = projData.data || [];
+        setProjects(all.filter(p => p.lat && p.lng));
+        setTotalProjects(all.length);
         setVerifications(verData.data || []);
       } catch (e) {
         console.error('Map data fetch failed:', e);
@@ -124,6 +126,25 @@ const VerificationMap = () => {
         })}
       </div>
 
+      {/* Coverage notice — without it, a map showing six pins reads as a
+          platform covering six projects. OAG reports do not state GPS
+          locations, so the great majority of the register cannot be plotted,
+          and we will not invent a coordinate to fill the map. */}
+      {!loading && totalProjects > projects.length && (
+        <div
+          className="shrink-0 px-4 py-2 border-b text-xs"
+          style={{ background: '#FFFBEB', borderColor: '#FDE68A', color: '#92400E' }}
+        >
+          <strong>{projects.length} of {totalProjects.toLocaleString()} projects</strong> can be
+          plotted. Auditor-General reports identify projects by name and constituency, not by GPS
+          coordinate, so a location is shown only where a source actually states one — we do not
+          estimate a project&rsquo;s position to fill the map.{' '}
+          <a href="/counties" style={{ textDecoration: 'underline', fontWeight: 700 }}>
+            Browse all {totalProjects.toLocaleString()} by county →
+          </a>
+        </div>
+      )}
+
       {/* Map */}
       <div className="flex-1 relative">
         {loading && (
@@ -196,10 +217,10 @@ const VerificationMap = () => {
                   fillOpacity: 0.9,
                 }}
                 eventHandlers={{
-                  click: () => {
-                    setSelectedProject(project);
-                    setFlyTarget([project.lat, project.lng]);
-                  },
+                  // The marker click only flies the map to the project; the
+                  // Popup below renders from `project` directly, so there is no
+                  // selected-project state to keep.
+                  click: () => setFlyTarget([project.lat, project.lng]),
                 }}
               >
                 <Popup className="custom-popup" maxWidth={300}>

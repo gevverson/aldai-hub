@@ -37,6 +37,14 @@ jobs:
       - name: Guard — no unsourced AI answers
         run: python3 tests/guards/test_no_unsourced_answers.py
 
+      # Amount parsing and model-chain fallback. No service, no network, no
+      # database — the two mechanisms that keep Audit AI either correct or
+      # silent, checked before anything slower runs.
+      - name: Python unit tests (ai-service)
+        run: |
+          python3 -m pip install --quiet pytest google-genai
+          python3 -m pytest ai-service/tests -q
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -54,6 +62,9 @@ jobs:
         run: npm ci
         working-directory: client
 
+      - name: Lint (client + server)
+        run: npm run lint
+
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
 
@@ -61,6 +72,10 @@ jobs:
       - name: Build client
         run: npm run build
         working-directory: client
+
+      - name: Server unit tests
+        run: npm test
+        working-directory: server
 
       # ── Seed the ephemeral database ──
       - name: Seed database
