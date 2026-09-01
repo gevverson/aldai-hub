@@ -89,3 +89,35 @@ class TestRelevanceFloor:
 
     def test_top_k_is_bounded(self):
         assert 1 <= query.TOP_K_CHUNKS <= 20
+
+
+class TestModelOverload:
+    """A saturated model is not a dead one — try the next in the chain.
+
+    Observed in production 2026-09-01: gemini-3.6-flash returned
+    503 UNAVAILABLE "This model is currently experiencing high demand" while the
+    service was otherwise healthy, and the citizen got a decline with two unused
+    models sitting in the chain behind it.
+    """
+
+    def test_high_demand_503_moves_to_the_next_model(self):
+        err = api_error(503, "UNAVAILABLE", "This model is currently experiencing high demand.")
+        assert query._is_model_overloaded(err) is True
+
+    @pytest.mark.parametrize("code,status,message", [
+        (429, "RESOURCE_EXHAUSTED", "Quota exceeded for requests per minute"),
+        (403, "PERMISSION_DENIED",  "API key not valid"),
+        (400, "INVALID_ARGUMENT",   "malformed request"),
+    ])
+    def test_account_level_failures_do_not_walk_the_chain(self, code, status, message):
+        # These fail identically on every model. Retrying turns one honest error
+        # into three slow ones and delays the true message to the citizen.
+        assert query._is_model_overloaded(api_error(code, status, message)) is False
+
+    def test_overload_and_retirement_are_distinct_conditions(self):
+        retired   = api_error(404, "NOT_FOUND",   "models/gemini-2.0-flash is not found")
+        saturated = api_error(503, "UNAVAILABLE", "experiencing high demand")
+        assert query._is_model_unavailable(retired) is True
+        assert query._is_model_overloaded(retired) is False
+        assert query._is_model_unavailable(saturated) is False
+        assert query._is_model_overloaded(saturated) is True

@@ -234,6 +234,12 @@ async def answer_question(
                     logger.warning(f"[QUERY] model {candidate} unavailable, trying next")
                     last_error = model_err
                     continue
+                if _is_model_overloaded(model_err):
+                    # Saturated right now, not gone. Another model in the chain
+                    # is very often free.
+                    logger.warning(f"[QUERY] model {candidate} overloaded, trying next")
+                    last_error = model_err
+                    continue
                 raise
             else:
                 if candidate != MODEL:
@@ -258,6 +264,12 @@ async def answer_question(
         err = str(e)
         if "API_KEY_INVALID" in err or "PERMISSION_DENIED" in err:
             return {"error": "AI service authentication failed. Check GEMINI_API_KEY."}
+        if "high demand" in err.lower() or "overloaded" in err.lower():
+            # Every model in the chain was saturated. Not our quota, not a bug —
+            # and worth saying so, because "try again shortly" is true here and
+            # "you are rate limited" would not be.
+            logger.warning("[QUERY] every model in the chain is overloaded")
+            return {"error": "The AI models are busy right now. Please try again in a moment."}
         if "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
             # Gemini reports a per-minute rate limit and a per-day quota with the
             # same RESOURCE_EXHAUSTED status. Telling someone to "try again
@@ -273,6 +285,27 @@ async def answer_question(
             return {"error": "AI service daily quota reached. Please try again tomorrow."}
         logger.error(f"[QUERY] Gemini error: {e}")
         return {"error": f"AI service error: {err[:120]}"}
+
+
+def _is_model_overloaded(err: Exception) -> bool:
+    """True when *this* model is temporarily swamped but others may be free.
+
+    Gemini answers 503 UNAVAILABLE with "This model is currently experiencing
+    high demand" when a specific model is saturated. Observed in production on
+    2026-09-01: gemini-3.6-flash returned it while the service was otherwise
+    healthy, and the citizen got a decline even though two other models in the
+    chain were sitting there unused.
+
+    Distinct from a quota error, which is about *our* account and would fail
+    identically on every model, so walking the chain there would only turn one
+    honest error into three slow ones.
+    """
+    if getattr(err, "code", None) == 503:
+        return True
+    if str(getattr(err, "status", "")).upper() == "UNAVAILABLE":
+        return True
+    text = str(err).lower()
+    return "high demand" in text or "overloaded" in text
 
 
 def _is_model_unavailable(err: Exception) -> bool:
