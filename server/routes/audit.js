@@ -66,23 +66,27 @@ function createAuditError(message, extra = {}) {
 function isColdStartFailure(err) {
   if (!err) return false;
 
-  // Awake but slow — see COLD_START_RETRY_WINDOW_MS.
+  // A timeout is the one failure never worth retrying: it means the service is
+  // awake and slow, and a second 75s wait makes someone wait twice to be told
+  // the same thing.
   if (err.name === 'AbortError') return false;
-  if (typeof err.elapsedMs === 'number' && err.elapsedMs >= COLD_START_RETRY_WINDOW_MS) {
-    return false;
-  }
 
-  // What Render returns while a sleeping container is starting.
-  if (typeof err.status === 'number') return [502, 503, 504].includes(err.status);
-
-  const text = `${err.message || ''}`.toLowerCase();
-  return (
-    text.includes('econnrefused') ||
-    text.includes('econnreset') ||
-    text.includes('socket hang up') ||
-    text.includes('fetch failed') ||
-    text.includes('network')
-  );
+  // Everything else is judged on SPEED, not on what the error says.
+  //
+  // The first version of this enumerated the statuses and messages a waking
+  // container was expected to produce (502/503/504, ECONNREFUSED, "fetch
+  // failed"...). In production it never fired once: whatever Render actually
+  // returns for a suspended service was not on the list, and the request came
+  // back in ~0.5s having matched nothing. Enumerating an upstream's error
+  // vocabulary is guessing, and it was wrong.
+  //
+  // Speed is the honest signal. A request that failed in under a second cannot
+  // have done any real work, so retrying costs almost nothing and — because
+  // that first request is what triggers the wake-up — usually succeeds. A
+  // failure that took longer than the window was not a cold start, whatever it
+  // says.
+  const elapsed = typeof err.elapsedMs === 'number' ? err.elapsedMs : 0;
+  return elapsed < COLD_START_RETRY_WINDOW_MS;
 }
 
 function isTransientError(err) {
@@ -402,6 +406,13 @@ export function createAuditRouter({
         model: fallback.model,
         service: 'unsourced-answer-refused',
         note: 'Python RAG service offline — no audit documents reachable, so no answer was generated',
+        // Why the RAG service could not be reached. Coarse on purpose — a status
+        // code and an error code, never the raw message, which can carry
+        // internal URLs. Without this a decline tells an operator nothing at
+        // all, and diagnosing one means reading deploy logs after the fact.
+        upstream_status: pythonError?.status ?? null,
+        upstream_code:   pythonError?.cause?.code || pythonError?.name || null,
+        upstream_ms:     pythonError?.elapsedMs ?? null,
         request_id: requestId,
       });
     } catch (geminiErr) {
