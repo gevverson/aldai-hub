@@ -424,7 +424,7 @@ const Home = () => {
       style={{ backgroundColor: '#0A0A0A' }}
     >
       {/* 1. Full-viewport hero */}
-      <Hero globalStats={stats} />
+      <Hero />
 
       {/* 2. GPS verification insight banner */}
       <GpsVerificationBanner />

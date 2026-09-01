@@ -23,6 +23,30 @@ const CODENAMES = [
 ];
 const codename = () => CODENAMES[Math.floor(Math.random() * CODENAMES.length)];
 
+// ── Location privacy — coarsen stored coordinates ─────────────
+// A verification is submitted from where the citizen is standing, which for a
+// site visit is usually where they *were*, and sometimes near where they live.
+// Full-precision coordinates attached to a public, mappable record are enough
+// to identify a person in a small community — and the people using this
+// platform are reporting on powerful local interests.
+//
+// So we keep the evidence and drop the precision: coordinates are rounded to
+// 3 decimal places (~111 m at the equator) before storage. That is ample for
+// plotting a project on a map and for the consensus engine, which reasons over
+// which project a verification belongs to, not over metres.
+//
+// The proximity evidence is NOT lost: the client computes `distanceFromSite`
+// against the project's own coordinates at full precision before submitting,
+// and that number is stored as-is. We coarsen where the citizen was, not how
+// close to the site they got.
+const COORD_DECIMALS = 3;
+const coarsen = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const factor = 10 ** COORD_DECIMALS;
+  return Math.round(n * factor) / factor;
+};
+
 // ── Multer — disk storage, images only ───────────────────────
 const MIME_TO_EXT = {
   'image/jpeg': '.jpg',
@@ -146,8 +170,9 @@ router.post('/', upload.single('photo'), submitRules, async (req, res, next) => 
       projectId,
       projectName:      projectName || '',
       ward:             ward        || '',
-      lat:              parseFloat(lat),
-      lng:              parseFloat(lng),
+      // Coarsened to a ~111 m grid — see COORD_DECIMALS above.
+      lat:              coarsen(lat),
+      lng:              coarsen(lng),
       description:      description.trim(),
       photoUrl:         req.file ? `/uploads/${req.file.filename}` : null,
       verifierCodename: codename(),

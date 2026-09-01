@@ -199,3 +199,55 @@ The pipeline was executed across all remaining 23 counties in Kenya, completing 
 - **1,446 Verified Projects**: Mapped across 19 counties with published per-project audit registers.
 - **Zero Hallucination Protocol**: All amounts, project descriptions, and audit remarks are verbatim Auditor-General text. No fabricated GPS coordinates, no false ghost labels.
 
+
+---
+
+## 6. Text provenance and corrected figures (2026-09-01)
+
+Two changes to how the platform accounts for the *quality* of the text a claim
+was read from. Neither adds data; both make existing data honest about itself.
+
+### 6a. Corrected amounts now explain themselves
+
+`repair_data.py` fixes amounts damaged by OCR in the OAG text layer, but the
+finding's `summary` quotes the source verbatim — including the damaged number.
+The corrected total and the corrupt quotation therefore sat side by side on the
+same card with nothing to reconcile them:
+
+| Field | Value |
+|---|---|
+| `amountKsh` (corrected) | 14,603,311 |
+| `summary` (verbatim source) | "…a combined total of **Kshs.14,603,311,047,800**" |
+
+`repair_data.py` had been writing an `amountNote` explaining each repair since
+commit `295416a8`, but `server/models/Finding.js` declared no such field, so
+Mongoose dropped it on every seed and **no reader ever saw one**. The field is
+now on the model and rendered by `FindingsList.jsx`: a correction notice above
+the quotation, a quiet footnote for the lower-stakes cases.
+
+28 of 8,551 findings carry a note — 3 OCR corrections, 22 re-parses, 3 with no
+single headline figure.
+
+### 6b. Scanned reports: OCR, marked as OCR
+
+`Nandi-County-Covid-19-Vaccine-Roll-Out-Report.pdf` is a 68-page page scan with
+no embedded text layer. It has been in the corpus, counted as ingested, and
+impossible to cite since it was added — `ingest_all.py` reported it as
+unsearchable, but nothing recovered it.
+
+`ai-service/ocr_pdf.py` now renders such a PDF at 300 dpi and runs Tesseract
+over it, writing the result to a **sidecar** at
+`ai-service/documents/ocr/<stem>.json`. The published PDF itself is never
+modified — what the platform holds stays byte-identical to what the
+Auditor-General released, and the machine-read text sits beside it.
+
+`ingest.py` uses the sidecar **only** for pages whose own text layer is empty,
+never in preference to it, and tags those chunks `text_source: "ocr"`. That tag
+is carried into the retrieved context and into the `sources` payload as
+`via_ocr`, so an answer resting on machine-read text is distinguishable from
+one resting on a publisher's text layer.
+
+This distinction is not pedantry. OCR misreads digits — that is the same defect
+class as §6a, arriving by a different route — and digits are what this platform
+is for. Treat any exact figure sourced from an OCR-derived page as needing
+confirmation against the page image before it is republished.

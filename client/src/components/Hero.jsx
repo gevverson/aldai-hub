@@ -60,7 +60,7 @@ const StatPill = ({ value, label, isAlert = false }) => (
 );
 
 /* ── Hero ────────────────────────────────────────────── */
-const Hero = ({ globalStats }) => {
+const Hero = () => {
   return (
     <section
       className="relative min-h-screen flex flex-col justify-center overflow-hidden noise-overlay"

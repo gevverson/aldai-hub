@@ -35,7 +35,12 @@ def meta_from_filename(name: str):
     year = f"{m.group(1)}/{m.group(2)}" if m else "unknown"
     label = re.sub(r"[-_]?\d{4}[-_]\d{4}.*$", "", stem).replace("-", " ").strip()
     label = re.sub(r"\s+", " ", label)
-    return f"{label} (OAG FY{year})", year
+    # Not every OAG document is a financial-year report — special audits (the
+    # Covid-19 vaccine roll-out, for one) carry no FY in the filename. Printing
+    # "(OAG FYunknown)" in a citation looks like a bug in the very thing this
+    # platform asks readers to trust, so omit the year rather than fake one.
+    suffix = f" (OAG FY{year})" if year != "unknown" else " (OAG special audit)"
+    return f"{label}{suffix}", year
 
 
 def already_indexed():
@@ -104,8 +109,9 @@ def main():
         for name in empty:
             logger.warning(f"     - {name}")
         logger.warning(
-            "   These need OCR before the AI can cite them. Until then the "
-            "platform holds them but cannot answer questions from them."
+            "   Recover them with:  python ocr_pdf.py <path-to-pdf>\n"
+            "   (or `python ocr_pdf.py --all`), then re-run this with --force.\n"
+            "   Until then the platform holds them but cannot cite them."
         )
 
 

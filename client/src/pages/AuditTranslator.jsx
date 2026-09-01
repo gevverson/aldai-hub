@@ -64,37 +64,6 @@ function parseAnswer(text) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TYPEWRITER HOOK
-═══════════════════════════════════════════════════════════ */
-function useTypewriter(text, speed = 8, enabled = true) {
-  const [displayed, setDisplayed] = useState('');
-  const [done, setDone]           = useState(false);
-
-  useEffect(() => {
-    if (!enabled || !text) {
-      setDisplayed(text || '');
-      setDone(true);
-      return;
-    }
-    setDisplayed('');
-    setDone(false);
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < text.length) {
-        setDisplayed(text.slice(0, i + 1));
-        i++;
-      } else {
-        setDone(true);
-        clearInterval(interval);
-      }
-    }, speed);
-    return () => clearInterval(interval);
-  }, [text, speed, enabled]);
-
-  return { displayed, done };
-}
-
-/* ═══════════════════════════════════════════════════════════
    AI RESPONSE CARD
 ═══════════════════════════════════════════════════════════ */
 const SectionBlock = ({ icon, swLabel, enLabel, content, accent }) => (
@@ -117,7 +86,7 @@ const SectionBlock = ({ icon, swLabel, enLabel, content, accent }) => (
   </div>
 );
 
-const ResponseCard = ({ message, onPreFillReport }) => {
+const ResponseCard = ({ message }) => {
   const parsed = parseAnswer(message.answer);
   const sev    = parsed?.severityKey ? SEVERITY_META[parsed.severityKey] : null;
   const [copied, setCopied] = useState(false);
@@ -360,19 +329,22 @@ const ResponseCard = ({ message, onPreFillReport }) => {
 /* ═══════════════════════════════════════════════════════════
    LOADING STATE
 ═══════════════════════════════════════════════════════════ */
+/* Module-level: a fixed list, so it does not need to be rebuilt on every render
+   (and the interval below can depend on it without re-subscribing). */
+const LOADING_PHRASES = [
+  'AI inasoma hati za OAG…',
+  'Inatafuta ukweli…',
+  'Inachambua ripoti…',
+  'Inakusanya ushahidi…',
+];
+
 const LoadingDots = () => {
   const [dots, setDots] = useState(0);
-  const phrases = [
-    'AI inasoma hati za OAG…',
-    'Inatafuta ukweli…',
-    'Inachambua ripoti…',
-    'Inakusanya ushahidi…',
-  ];
   const [phraseIdx, setPhraseIdx] = useState(0);
 
   useEffect(() => {
     const d = setInterval(() => setDots((p) => (p + 1) % 4), 400);
-    const p = setInterval(() => setPhraseIdx((i) => (i + 1) % phrases.length), 2000);
+    const p = setInterval(() => setPhraseIdx((i) => (i + 1) % LOADING_PHRASES.length), 2000);
     return () => { clearInterval(d); clearInterval(p); };
   }, []);
 
@@ -397,7 +369,7 @@ const LoadingDots = () => {
         className="italic"
         style={{ color: '#6B7280', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}
       >
-        {phrases[phraseIdx]}{''.padEnd(dots, '.')}
+        {LOADING_PHRASES[phraseIdx]}{''.padEnd(dots, '.')}
       </p>
     </div>
   );
@@ -523,7 +495,8 @@ const AuditTranslator = () => {
 
   // Persist history to localStorage
   useEffect(() => {
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 5))); } catch {}
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 5))); }
+    catch { /* private mode or quota exceeded — history is a convenience, not data */ }
   }, [history]);
 
   const submitQuestion = useCallback(async (q) => {

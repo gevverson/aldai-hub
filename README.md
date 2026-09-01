@@ -87,7 +87,7 @@ The Node server proxies AI requests to the Python RAG service. The vector index 
 | Embeddings | ChromaDB ONNX `DefaultEmbeddingFunction` — computed locally, no API quota |
 | Security | Helmet, express-rate-limit, express-mongo-sanitize, express-validator |
 | DevOps | Docker, Docker Compose, Render, GitHub Actions CI |
-| Testing | Playwright E2E (61 tests) + Node test runner + a Python CI guard |
+| Testing | Playwright E2E (61) · pytest (36) · Node test runner · anti-fabrication CI guard · ESLint |
 
 The Gemini model is an ordered **chain**, not a single pinned name: only a 404/`NOT_FOUND` walks to the next candidate, so a retired model degrades instead of taking the service offline. Override with `GEMINI_MODEL`. (Audit AI was offline for three months in 2026 because `gemini-2.0-flash` was retired and the name was hardcoded — hence the chain.)
 
@@ -237,9 +237,11 @@ Runs on `http://localhost:5173`.
 GitHub Actions runs the full suite on every push and PR to `main`, against an **ephemeral MongoDB service container** — never production data.
 
 ```bash
-npm run test:e2e          # 61 Playwright tests
-cd server && npm test     # Node test runner (audit router)
-python3 tests/guards/test_no_unsourced_answers.py
+npm run lint                                      # ESLint — client + server
+python3 tests/guards/test_no_unsourced_answers.py # anti-fabrication guard
+python3 -m pytest ai-service/tests -q             # 36 tests — parser + model chain
+cd server && npm test                             # Node test runner (audit router)
+npm run test:e2e                                  # 61 Playwright tests
 ```
 
 > ⚠️ **`playwright.config.js` defaults `BASE_URL` and `SERVER_URL` to production.**
@@ -293,11 +295,12 @@ The pipeline that produces this data is reproducible and lives in `ai-service/pi
 - [x] All 47 Kenya counties
 - [x] Constituency-level audit findings for narrative-only reports
 - [x] Reproducible OAG ingestion pipeline
-- [ ] Geocode projects — only 6 of 1,449 currently have coordinates
-- [ ] Render `amountNote` in the UI so OCR-corrected figures show their correction
-- [ ] Round stored verification coordinates to a coarse grid for citizen privacy
+- [ ] Geocode projects — only 6 of 1,449 have coordinates. OAG reports state no GPS, so this
+      needs a verified external gazetteer; the map now discloses the gap rather than hiding it.
+- [x] Render `amountNote` in the UI so OCR-corrected figures show their correction
+- [x] Round stored verification coordinates to a coarse grid for citizen privacy
 - [ ] OCR the one image-only PDF in the corpus (Nandi Covid-19 vaccine rollout)
-- [ ] Migrate `google-generativeai` → `google.genai` (predecessor SDK is end-of-life)
+- [x] Migrate `google-generativeai` → `google.genai` (predecessor SDK is end-of-life)
 - [ ] Swahili-first UI option
 - [ ] SMS report submission (for feature phones)
 
