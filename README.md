@@ -274,6 +274,37 @@ To report a vulnerability, see **[SECURITY.md](SECURITY.md)**. Please do not ope
 
 ---
 
+## Operations — cold starts
+
+All three services run on Render's free tier, which **sleeps a service after 15
+minutes of inactivity**. A sleeping service takes roughly a minute to come back.
+
+`.github/workflows/keep-alive.yml` asks for a ping every 10 minutes, but GitHub
+throttles scheduled workflows on free runners. Measured over 15 consecutive runs:
+**minimum gap 113 minutes, median 239 (~4 hours)** — so it has never once fired
+inside the sleep window. It is a bonus, not uptime.
+
+**To actually keep the services awake, add an external pinger** (cron-job.org or
+UptimeRobot, both free) hitting these every 5 minutes:
+
+```
+https://macho-ya-mwananchi-server.onrender.com/api/health
+https://macho-ya-mwananchi-ai.onrender.com/health
+```
+
+This matters beyond latency: a sleeping AI service means a citizen's first
+question can come back as *"I cannot reach the audit documents"*. The application
+softens that in two places, but neither is a substitute for staying awake:
+
+- **The Audit page wakes the service on load** (`AuditTranslator.jsx`), so it is
+  usually ready by the time a question is typed.
+- **The query route retries a cold-start failure once** (`audit.js`). Only a fast
+  connection-level failure is retried — a *timeout* never is, because that means
+  the service is awake and slow, and a second 75-second wait would make someone
+  wait twice for the same answer.
+
+---
+
 ## Data Sources
 
 All data is sourced exclusively from official government publications:
@@ -301,6 +332,7 @@ The pipeline that produces this data is reproducible and lives in `ai-service/pi
 - [x] Round stored verification coordinates to a coarse grid for citizen privacy
 - [ ] OCR the one image-only PDF in the corpus (Nandi Covid-19 vaccine rollout)
 - [x] Migrate `google-generativeai` → `google.genai` (predecessor SDK is end-of-life)
+- [ ] External uptime pinger (see Operations — the GitHub cron does not keep services awake)
 - [ ] Swahili-first UI option
 - [ ] SMS report submission (for feature phones)
 
