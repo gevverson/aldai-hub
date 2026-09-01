@@ -140,6 +140,12 @@ app.use('/api/audit',          auditRouter);
 app.use('/api/verifications',  verificationsRouter);
 
 // ── Health check ──────────────────────────────────────────────
+// Which commit is actually serving. Render sets RENDER_GIT_COMMIT on every
+// deploy. Without this there is no way to tell a finished deploy from one still
+// rolling out, and a live check against the wrong build reads as a bug in the
+// code you just shipped — which is exactly how an hour got spent on 2026-09-01.
+const BUILD_COMMIT = (process.env.RENDER_GIT_COMMIT || 'local').slice(0, 8);
+
 app.get('/api/health', (req, res) => {
   res.json({
     success:   true,
@@ -148,6 +154,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     db:        'connected',
     env:       process.env.NODE_ENV || 'development',
+    commit:    BUILD_COMMIT,
   });
 });
 
