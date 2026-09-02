@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / "server" / ".env")  # share .env with Node
 load_dotenv()  # also load from ai-service/.env if present
 
+import coverage
 import ingest as ingest_module
 import query as query_module
 
@@ -169,6 +170,10 @@ async def health():
         "model":      query_module.MODEL,
         "documents":  len(docs),
         "api_key_set": bool(os.getenv("GEMINI_API_KEY")),
+        # What the corpus actually reaches. The service can only answer from
+        # ingested reports, so a reader is entitled to know which counties
+        # those are before their question is declined.
+        "coverage":   coverage.summarise(docs),
         "message":    "Ukweli ni nguvu. 🇰🇪",
     }
 
@@ -248,6 +253,7 @@ async def list_documents():
     docs = ingest_module.list_ingested_documents()
     return {
         "count":     len(docs),
+        "coverage":  coverage.summarise(docs),
         "documents": docs,
     }
 

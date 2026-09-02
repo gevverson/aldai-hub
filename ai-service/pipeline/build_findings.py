@@ -59,11 +59,46 @@ BAD_HEADING = re.compile(
 SKIP_DOC = re.compile(r"county|assembly|executive|\bfund\b|technical|training|college|institute|mixed", re.I)
 
 
-def constituency_from_filename(name):
+# Canonical IEBC constituency names, keyed by county. The filename is a hint,
+# not an authority: `Aldai-NGCDG-2019-2020.pdf` is a real OAG filename with
+# NGCDG for NG-CDF, and the old regex — which enumerated the spellings it
+# expected — silently minted a constituency called "Aldai Ngcdg". Thirteen
+# findings went into it and became unreachable, because no such place exists.
+# Match against the real list instead of trying to predict how a filename can
+# be wrong.
+from gen_geography import DATA as IEBC_CONSTITUENCIES
+
+
+def _norm(s):
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+_BY_COUNTY = {
+    county: {_norm(k): k for k in names}
+    for county, names in IEBC_CONSTITUENCIES.items()
+}
+
+
+def constituency_from_filename(name, county=None):
+    """Resolve a PDF filename to a real constituency in `county`.
+
+    Takes the longest leading run of filename tokens that names an actual
+    constituency, so trailing junk of any shape — a fund marker, a typo of
+    one, a stray year — falls away without having to be anticipated.
+    Returns None when nothing matches; the caller reports that rather than
+    inventing a place.
+    """
     stem = re.sub(r"\.pdf$", "", name, flags=re.I)
-    stem = re.sub(r"[-_]?NGC[DF]+[-_]?\d{4}[-_]\d{4}.*$", "", stem, flags=re.I)
     stem = re.sub(r"[-_]?\d{4}[-_]\d{4}.*$", "", stem)
-    return re.sub(r"[-_]+", " ", stem).strip().title()
+    tokens = [t for t in re.split(r"[-_\s]+", stem) if t]
+
+    known = _BY_COUNTY.get(county, {})
+    # Longest first, so "Nandi Hills" is never truncated to a shorter match.
+    for n in range(len(tokens), 0, -1):
+        hit = known.get(_norm(" ".join(tokens[:n])))
+        if hit:
+            return hit
+    return None
 
 
 def corpora():
@@ -88,6 +123,7 @@ def clean_summary(excerpt):
 
 def main():
     records = []
+    unresolved = []               # (pdf name, county) we refuse to attribute
     opinions = defaultdict(dict)  # (county,constituency) -> {year: opinion}
 
     for county, corpus in corpora():
@@ -100,7 +136,13 @@ def main():
                 print(f"ERR {pdf.name}: {e}")
                 continue
 
-            constituency = constituency_from_filename(pdf.name)
+            constituency = constituency_from_filename(pdf.name, county)
+            if constituency is None:
+                # Never guess. A finding filed under a place that does not
+                # exist is unreachable from the drill-down and invisible to
+                # the reader it concerns.
+                unresolved.append((pdf.name, county))
+                continue
             fy = doc["financial_year"]
             fs_op = next((v for k, v in doc.get("opinions", {}).items()
                           if "Financial" in k), None)
@@ -136,6 +178,15 @@ def main():
     print("by county:", dict(Counter(r["county"] for r in records)))
     print("with amount:", sum(1 for r in records if r["amountKsh"]))
 
+    if unresolved:
+        print(f"\n{len(unresolved)} report(s) could not be matched to an IEBC "
+              f"constituency and were SKIPPED — fix the filename or the county "
+              f"list, then re-run:")
+        for name, county in unresolved:
+            print(f"  {county}: {name}")
+        return 1
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
