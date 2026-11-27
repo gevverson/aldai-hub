@@ -39,7 +39,7 @@ This platform was conceived, designed, and built from scratch by Gevverson Kipko
 > — Gevverson Kipkoech, Creator
 
 [![GitHub](https://img.shields.io/badge/GitHub-gevverson-black?logo=github)](https://github.com/gevverson)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Gevverson%20Kipkoech-blue?logo=linkedin)](https://linkedin.com/in/gevverson-kipkoech)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Gevverson%20Kipkoech-blue?logo=linkedin)](https://linkedin.com/in/gevverson)
 
 ---
 

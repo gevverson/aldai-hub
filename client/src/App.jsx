@@ -155,7 +155,7 @@ function App() {
             <div className="flex items-center gap-4 mt-1">
               {/* LinkedIn */}
               <a
-                href="https://linkedin.com/in/gevverson-kipkoech"
+                href="https://linkedin.com/in/gevverson"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Gevverson Kipkoech on LinkedIn"
