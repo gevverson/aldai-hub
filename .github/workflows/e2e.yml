@@ -9,7 +9,7 @@ on:
 jobs:
   e2e:
     name: Playwright E2E (hermetic)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     # Ephemeral MongoDB for this run — no dependency on production data.

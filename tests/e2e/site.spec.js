@@ -451,7 +451,7 @@ test.describe('Footer', () => {
     const li = page.locator('a[href*="linkedin.com"]').first();
     await expect(li).toBeVisible();
     const href = await li.getAttribute('href');
-    expect(href).toContain('gevverson-kipkoech');
+    expect(href).toMatch(/linkedin\.com\/in\/gevverson\/?$/);
   });
 
   test('GitHub link points to correct profile', async ({ page }) => {
