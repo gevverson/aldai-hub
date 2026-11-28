@@ -18,13 +18,30 @@ const NEGATIVE = [
 // RESULT' — was reported but never checked, and must not be scored either way.
 const CLEAN = ['COMPLETE'];
 
-/** Count of audit findings grouped by a field — Map keyed by the grouped value. */
+/**
+ * Audit findings grouped by a field — Map keyed by the grouped value.
+ *
+ * Deliberately no sum of `amountKsh`. OAG findings are heterogeneous —
+ * an unexplained variance, an unsupported balance and a pending bill are
+ * not addends — so a total would read as "this much was stolen" while
+ * meaning nothing. The count of findings that carry a figure is honest;
+ * the figures themselves are shown one by one, each with its citation.
+ */
 async function findingRollup(match, groupField) {
   const rows = await Finding.aggregate([
     { $match: match },
-    { $group: { _id: `$${groupField}`, findingCount: { $sum: 1 } } },
+    {
+      $group: {
+        _id: `$${groupField}`,
+        findingCount: { $sum: 1 },
+        findingsWithAmount: {
+          $sum: { $cond: [{ $gt: ['$amountKsh', 0] }, 1, 0] },
+        },
+        findingYears: { $addToSet: '$year' },
+      },
+    },
   ]);
-  return new Map(rows.map((r) => [r._id, r.findingCount]));
+  return new Map(rows.map((r) => [r._id, r]));
 }
 
 /**
@@ -70,7 +87,7 @@ async function rollup(match, groupField) {
   return new Map(rows.map((r) => [r._id, r]));
 }
 
-const shape = (stats, findingCount = 0) => ({
+const shape = (stats, finds = null) => ({
   projectCount:   stats?.projectCount   ?? 0,
   totalAllocated: stats?.totalAllocated ?? 0,
   ghostCount:     stats?.ghostCount     ?? 0,
@@ -80,7 +97,9 @@ const shape = (stats, findingCount = 0) => ({
   // Reported in the register but never verified either way. Surfaced so a
   // reader can see how much of the score rests on nothing.
   unverifiedCount: Math.max(0, (stats?.projectCount ?? 0) - (stats?.verifiedCount ?? 0)),
-  findingCount,
+  findingCount:        finds?.findingCount ?? 0,
+  findingsWithAmount:  finds?.findingsWithAmount ?? 0,
+  findingYears:        [...(finds?.findingYears ?? [])].sort(),
 });
 
 // ── GET /api/geography ────────────────────────────────────────
@@ -98,11 +117,11 @@ router.get('/', async (req, res, next) => {
     const data = counties.map((county) => ({
       name: county.name,
       code: county.code,
-      ...shape(byCounty.get(county.name), findCounty_.get(county.name) ?? 0),
+      ...shape(byCounty.get(county.name), findCounty_.get(county.name) ?? null),
       constituencies: county.constituencies.map((k) => ({
         name: k.name,
         covered: k.covered,
-        ...shape(byConstituency.get(k.name), findConstituency_.get(k.name) ?? 0),
+        ...shape(byConstituency.get(k.name), findConstituency_.get(k.name) ?? null),
       })),
     }));
 
@@ -136,13 +155,13 @@ router.get('/:county', async (req, res, next) => {
       data: {
         name: county.name,
         code: county.code,
-        ...shape(countyTotals.get(county.name), findCountyTotal.get(county.name) ?? 0),
+        ...shape(countyTotals.get(county.name), findCountyTotal.get(county.name) ?? null),
         // A null key holds county-wide (County Executive) projects.
         countyWide: shape(byConstituency.get(null)),
         constituencies: county.constituencies.map((k) => ({
           name: k.name,
           covered: k.covered,
-          ...shape(byConstituency.get(k.name), findByConstituency.get(k.name) ?? 0),
+          ...shape(byConstituency.get(k.name), findByConstituency.get(k.name) ?? null),
         })),
       },
     });

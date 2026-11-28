@@ -253,6 +253,25 @@ const ResponseCard = ({ message }) => {
         )}
       </div>
 
+      {/* An answer with no citation is a decline, and the usual reason is
+          that the corpus does not reach the place asked about. Saying which
+          counties it does reach turns "the AI is broken" into "we have not
+          got to you yet" — a different, true, and actionable statement. */}
+      {message.sources?.length === 0 && message.coverage?.counties?.length > 0 && (
+        <div
+          className="px-5 pb-4"
+          style={{ borderTop: '1px solid #1F2937', paddingTop: '12px' }}
+        >
+          <p style={{ color: '#9CA3AF', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+            📍 No source was cited, so this answer is not evidence. The indexed
+            reports cover{' '}
+            <strong style={{ color: '#F9FAFB' }}>{message.coverage.counties.join(', ')}</strong>
+            {' '}({message.coverage.counties.length} of {message.coverage.counties_total} counties) —
+            if you asked about somewhere else, that report has not been ingested yet.
+          </p>
+        </div>
+      )}
+
       {/* Source citations from RAG */}
       {message.sources?.length > 0 && (
         <div
@@ -378,22 +397,13 @@ const LoadingDots = () => {
 /* ═══════════════════════════════════════════════════════════
    DOCUMENT INVENTORY
 ═══════════════════════════════════════════════════════════ */
-const DocumentInventory = () => {
-  const [docs, setDocs]   = useState([]);
+// `docs`, `docsState` and `coverage` come from the page, because an answer
+// that cites nothing needs the same coverage facts this panel shows, and the
+// index should only be fetched once.
+const DocumentInventory = ({ docs, docsState, coverage }) => {
   const [status, setStatus] = useState(null);
-  // 'loading' → 'ready' | 'error'. Without this the panel showed "Loading…"
-  // for an empty list, a failed fetch and a genuine zero alike, so a service
-  // that was answering nothing looked indistinguishable from one still
-  // starting up. On this page in particular, "we hold no documents" is a
-  // thing the reader is entitled to know.
-  const [docsState, setDocsState] = useState('loading');
 
   useEffect(() => {
-    fetch('/api/audit/documents')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d) => { setDocs(d?.documents || []); setDocsState('ready'); })
-      .catch(() => setDocsState('error'));
-
     fetch('/api/audit/status')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d) setStatus(d); })
@@ -426,6 +436,15 @@ const DocumentInventory = () => {
           </span>
         </div>
       </div>
+      {/* What the corpus reaches. Forty-six filename chips do not tell a
+          reader in Meru that no Meru report is indexed; this does. */}
+      {coverage?.counties?.length > 0 && (
+        <p style={{ color: '#9CA3AF', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+          Covering <strong style={{ color: '#F9FAFB' }}>{coverage.counties.join(', ')}</strong>
+          {' '}— {coverage.counties.length} of {coverage.counties_total} counties.
+          Questions about anywhere else cannot be answered yet.
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         {docs.length === 0 ? (
           <span style={{ color: '#6B7280', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
@@ -468,6 +487,26 @@ const AuditTranslator = () => {
   const location = useLocation();
 
   // State
+  // 'loading' → 'ready' | 'error'. Without this the panel showed "Loading…"
+  // for an empty list, a failed fetch and a genuine zero alike, so a service
+  // that was answering nothing looked indistinguishable from one still
+  // starting up. On this page in particular, "we hold no documents" is a
+  // thing the reader is entitled to know.
+  const [docs, setDocs]           = useState([]);
+  const [docsState, setDocsState] = useState('loading');
+  const [coverage, setCoverage]   = useState(null);
+
+  useEffect(() => {
+    fetch('/api/audit/documents')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d) => {
+        setDocs(d?.documents || []);
+        setCoverage(d?.coverage || null);
+        setDocsState('ready');
+      })
+      .catch(() => setDocsState('error'));
+  }, []);
+
   const [question, setQuestion]     = useState('');
   const [language, setLanguage]     = useState('en'); // default English
   const [messages, setMessages]     = useState([]);
@@ -549,6 +588,7 @@ const AuditTranslator = () => {
           response_time_ms: data.response_time_ms,
           model:            data.model,
           service:          data.service,
+          coverage,
         },
       ]);
     } catch (err) {
@@ -564,7 +604,7 @@ const AuditTranslator = () => {
     } finally {
       setLoading(false);
     }
-  }, [question, language, loading]);
+  }, [question, language, loading, coverage]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -872,7 +912,7 @@ const AuditTranslator = () => {
 
         {/* ── Document Inventory ── */}
         <div className="mt-6">
-          <DocumentInventory />
+          <DocumentInventory docs={docs} docsState={docsState} coverage={coverage} />
         </div>
       </div>
 

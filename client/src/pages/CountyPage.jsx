@@ -83,6 +83,34 @@ const CountyPage = () => {
   }
 
   const covered = county.constituencies.filter((k) => k.projectCount > 0).length;
+  const withFindings = county.constituencies.filter((k) => k.findingCount > 0).length;
+
+  // Most OAG reports are narrative: they carry an opinion and its basis, but no
+  // project-by-project register. 28 of 47 counties are in that shape. This page
+  // used to render them as four zeros and a sentence about projects that do not
+  // exist — Meru showed "Projects Audited 0 · Public Funds Traced KSh 0" while
+  // holding 457 cited findings the reader was never told about.
+  const findingsOnly = county.projectCount === 0 && county.findingCount > 0;
+  const years = county.findingYears || [];
+  const yearSpan = years.length
+    ? (years.length === 1 ? years[0] : `${years[0]} – ${years[years.length - 1]}`)
+    : '—';
+
+  const stats = findingsOnly
+    ? [
+        { l: 'Audit Findings', v: county.findingCount, c: '#D97706' },
+        { l: 'Constituencies Audited', v: `${withFindings} of ${county.constituencies.length}`, c: '#F9FAFB' },
+        { l: 'Financial Years', v: yearSpan, c: '#F9FAFB' },
+        // A count, not a sum: see the note on findingRollup in the API. These
+        // findings are not addends and a total would invent a number.
+        { l: 'Findings With a Figure', v: county.findingsWithAmount, c: '#F59E0B' },
+      ]
+    : [
+        { l: 'Projects Audited', v: county.projectCount, c: '#F9FAFB' },
+        { l: 'Public Funds Traced', v: formatKsh(county.totalAllocated), c: '#D97706' },
+        { l: 'Flagged by Auditor', v: `${county.flaggedCount} · ${formatKsh(county.flaggedValue)}`, c: '#F59E0B' },
+        { l: 'Ghost Projects', v: county.ghostCount, c: '#F87171' },
+      ];
 
   return (
     <div className="pb-20">
@@ -94,16 +122,13 @@ const CountyPage = () => {
             {county.name} County
           </h1>
           <p style={{ color: '#9CA3AF', fontSize: '16px', fontFamily: "'DM Sans', sans-serif" }}>
-            Select a constituency to see every audited project, with the report and page it came from.
+            {findingsOnly
+              ? 'Select a constituency to read the Auditor-General’s findings, each cited to its report and page.'
+              : 'Select a constituency to see every audited project, with the report and page it came from.'}
           </p>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-            {[
-              { l: 'Projects Audited', v: county.projectCount, c: '#F9FAFB' },
-              { l: 'Public Funds Traced', v: formatKsh(county.totalAllocated), c: '#D97706' },
-              { l: 'Flagged by Auditor', v: `${county.flaggedCount} · ${formatKsh(county.flaggedValue)}`, c: '#F59E0B' },
-              { l: 'Ghost Projects', v: county.ghostCount, c: '#F87171' },
-            ].map((s) => (
+            {stats.map((s) => (
               <div key={s.l}>
                 <p className="uppercase tracking-widest font-semibold mb-1" style={{ color: '#4B5563', fontSize: '10px', fontFamily: "'DM Sans', sans-serif" }}>
                   {s.l}
@@ -116,10 +141,50 @@ const CountyPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Say why the project columns are absent, rather than showing zeros
+            and letting a reader conclude their county was never audited. */}
+        {findingsOnly && (
+          <div className="rounded-2xl p-6 mb-10" style={{ background: '#111827', border: '1px solid #1F2937' }}>
+            <div className="flex items-start gap-3">
+              <span style={{ fontSize: '18px', lineHeight: 1.3 }}>📄</span>
+              <div>
+                <h2 className="font-display text-white mb-1" style={{ fontSize: '18px' }}>
+                  No project register published for {county.name}
+                </h2>
+                <p style={{ color: '#D97706', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", fontStyle: 'italic', marginBottom: '10px' }}>
+                  Hakuna orodha ya miradi — matokeo ya ukaguzi yapo
+                </p>
+                <p style={{ color: '#9CA3AF', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7 }}>
+                  {county.name} was audited. Its Auditor-General reports are{' '}
+                  <strong style={{ color: '#F9FAFB' }}>narrative</strong>: they give an opinion and the
+                  findings behind it, but no project-by-project verification appendix listing what was
+                  built and whether it exists. Only some NG-CDF reports carry that appendix.
+                </p>
+                <p className="mt-3" style={{ color: '#9CA3AF', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.7 }}>
+                  So there are no project cards here — inventing them would mean inventing projects. What
+                  the auditor did record is{' '}
+                  <strong style={{ color: '#F9FAFB' }}>{county.findingCount} findings</strong> across{' '}
+                  {withFindings} constituenc{withFindings === 1 ? 'y' : 'ies'}, each quoted verbatim and
+                  cited to its report and page. Open a constituency below to read them.
+                </p>
+                <Link
+                  to="/methodology"
+                  className="inline-block mt-4 font-semibold"
+                  style={{ color: '#D97706', fontSize: '13px', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  How coverage is decided →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
           <h2 className="text-2xl font-display font-bold text-white">Constituencies</h2>
           <p style={{ color: '#6B7280', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
-            {covered} of {county.constituencies.length} with published project data
+            {findingsOnly
+              ? `${withFindings} of ${county.constituencies.length} with audit findings on record`
+              : `${covered} of ${county.constituencies.length} with published project data`}
           </p>
         </div>
 

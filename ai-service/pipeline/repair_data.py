@@ -16,6 +16,15 @@ Three defect classes were found in the 2026-08-31 audit:
      table as if they were projects: `allocated` held a bank ACCOUNT NUMBER
      (Ksh 1.1 trillion for a primary school). They are not projects; drop them.
 
+  4. findings.json filed 13 Aldai FY2019/20 findings under a constituency
+     called "Aldai Ngcdg" — no such place exists. The OAG published that
+     report as `Aldai-NGCDG-2019-2020.pdf` (NGCDG for NG-CDF), and the old
+     filename regex enumerated the spellings it expected, so the typo became
+     a place name. Those findings matched nothing in the geography tree and
+     were unreachable from the drill-down. build_findings.py now resolves
+     names against the IEBC list instead of guessing; this repairs the data
+     already seeded.
+
 Idempotent: safe to re-run.
 """
 import json
@@ -47,6 +56,13 @@ VERIFIED = {
         (158_757_640, "Turkana North FY2016/17 p6 budget table: 158,757,640 (x4)"),
 }
 
+# Constituency names that are not places. The value is the real constituency
+# the report belongs to, verified from the source filename and the financial
+# year (Aldai's FY2019/20 report was otherwise missing from the record).
+MISFILED_CONSTITUENCY = {
+    ("Nandi", "Aldai Ngcdg"): "Aldai",
+}
+
 # No single headline figure exists for these; the only numbers on the line are
 # a rate range, a table header, or a note about a units annotation.
 DROP_AMOUNT = {
@@ -54,6 +70,31 @@ DROP_AMOUNT = {
     ("Kajiado", "Kajiado North", "2016/2017"),
     ("Marsabit", "Moyale", "2018/2019"),
 }
+
+
+def repair_constituencies():
+    """Re-file findings sitting under a constituency that does not exist."""
+    data = json.loads(FINDINGS.read_text())
+    moved = 0
+
+    for f in data:
+        real = MISFILED_CONSTITUENCY.get((f["county"], f.get("constituency")))
+        if not real:
+            continue
+        wrong = f["constituency"]
+        f["constituency"] = real
+        # The citation string embeds the same wrong name — a reader checking
+        # the source must be sent to a report they can actually find.
+        if isinstance(f.get("source"), str):
+            f["source"] = f["source"].replace(wrong, real)
+        moved += 1
+
+    if moved == 0:
+        print("findings.json: no misfiled constituencies (already repaired)")
+        return
+
+    FINDINGS.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    print(f"findings.json: re-filed {moved} findings under their real constituency")
 
 
 def repair_findings():
@@ -155,5 +196,6 @@ def repair_seed():
 
 
 if __name__ == "__main__":
+    repair_constituencies()
     repair_findings()
     repair_seed()

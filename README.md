@@ -21,9 +21,17 @@ A civic accountability platform that turns Kenya's official Office of the Audito
 | **Projects tracked** | **1,449** |
 | **Audit findings** | **8,551** |
 | **Constituencies catalogued** | 290 |
-| **Source documents indexed** | 46 OAG PDFs (FY2016/17 – FY2024/25) |
+| **Source documents indexed (AI corpus)** | 46 OAG PDFs — Nandi County only |
 
 Not every OAG report contains a per-project verification appendix — many are narrative-only. Where no register exists, the platform shows the **audit findings** (opinion, basis, flagged amounts) rather than inventing projects. That distinction is deliberate and is explained on the in-app [Methodology page](https://macho-ya-mwananchi-client.onrender.com/methodology).
+
+**Two coverages, and the difference matters.** The *findings* dataset is national —
+all 47 counties, every figure cited to a report and page. The *AI corpus* is the 46
+full PDFs indexed for the Audit Translator, and those are Nandi only. So the Audit
+Translator declines a question about Meru: that is the corpus not reaching Meru, not
+the service failing. `/api/audit/documents` reports which counties are covered —
+derived from the index, never hardcoded — and the page says so both before and after
+a question is asked.
 
 ---
 

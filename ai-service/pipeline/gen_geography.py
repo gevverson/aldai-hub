@@ -70,71 +70,82 @@ CODES = {n: i+1 for i, n in enumerate([
 # Coverage is at CONSTITUENCY level (many counties publish narrative-only
 # reports). Derived directly from national_projects.json so the covered flags
 # can never drift from the data that actually exists.
-import json as _json
-COVERED = {}
-_proj = ROOT / "national_projects.json"
-if _proj.exists():
-    for _r in _json.loads(_proj.read_text()):
-        if _r.get("constituency"):
-            COVERED.setdefault(_r["county"], set()).add(_r["constituency"])
 
-n_counties = len(DATA)
-n_const = sum(len(v) for v in DATA.values())
-assert n_counties == 47, f"expected 47 counties, got {n_counties}"
-assert n_const == 290, f"expected 290 constituencies, got {n_const}"
-assert set(CODES) == set(DATA), "code/county mismatch"
+# Importable as a module: `DATA` above is the canonical IEBC county →
+# constituency list, and build_findings.py resolves report filenames against
+# it. Generating geography.js is a side effect nobody importing that list
+# asked for, so it only happens when this file is run directly.
+def main():
+    import json as _json
+    COVERED = {}
+    _proj = ROOT / "national_projects.json"
+    if _proj.exists():
+        for _r in _json.loads(_proj.read_text()):
+            if _r.get("constituency"):
+                COVERED.setdefault(_r["county"], set()).add(_r["constituency"])
 
-# Emit ordered by county code (canonical), so the file is stable.
-ordered = sorted(DATA.items(), key=lambda kv: CODES[kv[0]])
+    n_counties = len(DATA)
+    n_const = sum(len(v) for v in DATA.values())
+    assert n_counties == 47, f"expected 47 counties, got {n_counties}"
+    assert n_const == 290, f"expected 290 constituencies, got {n_const}"
+    assert set(CODES) == set(DATA), "code/county mismatch"
 
-lines = [
-    "/**",
-    " * geography.js — Kenya's 47 counties and 290 constituencies.",
-    " *",
-    " * Source: IEBC / Constitution First Schedule (via Wikipedia",
-    " * \"Constituencies of Kenya\"), verified at 47 counties / 290 constituencies.",
-    " * This is authoritative administrative data — the navigation backbone.",
-    " *",
-    " * `covered: true` marks constituencies whose OAG audit data has actually",
-    " * been ingested and verified. Everything else shows honestly as \"data",
-    " * coming\" — the map of the country is complete; the evidence fills in as",
-    " * each county's Auditor-General reports are processed. We never mark a",
-    " * place covered before its primary-source data exists.",
-    " *",
-    " * Regenerate: scratchpad/gen_geography.py",
-    " */",
-    "",
-    "export const counties = [",
-]
-for name, consts in ordered:
-    cov = COVERED.get(name, set())
-    lines.append("  {")
-    lines.append(f"    name: {json.dumps(name)},")
-    lines.append(f"    code: {CODES[name]},")
-    lines.append("    constituencies: [")
-    for c in consts:
-        flag = "true " if c in cov else "false"
-        lines.append(f"      {{ name: {json.dumps(c)}, covered: {flag} }},")
-    lines.append("    ],")
-    lines.append("  },")
-lines.append("];")
-lines.append("")
-lines.append("/** Flat list of every constituency, each tagged with its county. */")
-lines.append("export const allConstituencies = counties.flatMap((c) =>")
-lines.append("  c.constituencies.map((k) => ({ ...k, county: c.name }))")
-lines.append(");")
-lines.append("")
-lines.append("export const findCounty = (name) =>")
-lines.append("  counties.find((c) => c.name.toLowerCase() === String(name).toLowerCase());")
-lines.append("")
-lines.append("export const findConstituency = (name) =>")
-lines.append("  allConstituencies.find(")
-lines.append("    (k) => k.name.toLowerCase() === String(name).toLowerCase()")
-lines.append("  );")
-lines.append("")
+    # Emit ordered by county code (canonical), so the file is stable.
+    ordered = sorted(DATA.items(), key=lambda kv: CODES[kv[0]])
 
-out = "/home/viper/Desktop/Aldai Hub/server/data/geography.js"
-open(out, "w").write("\n".join(lines))
-print(f"wrote {out}")
-print(f"{n_counties} counties, {n_const} constituencies")
-print(f"covered: {sum(len(v) for v in COVERED.values())} constituencies")
+    lines = [
+        "/**",
+        " * geography.js — Kenya's 47 counties and 290 constituencies.",
+        " *",
+        " * Source: IEBC / Constitution First Schedule (via Wikipedia",
+        " * \"Constituencies of Kenya\"), verified at 47 counties / 290 constituencies.",
+        " * This is authoritative administrative data — the navigation backbone.",
+        " *",
+        " * `covered: true` marks constituencies whose OAG audit data has actually",
+        " * been ingested and verified. Everything else shows honestly as \"data",
+        " * coming\" — the map of the country is complete; the evidence fills in as",
+        " * each county's Auditor-General reports are processed. We never mark a",
+        " * place covered before its primary-source data exists.",
+        " *",
+        " * Regenerate: scratchpad/gen_geography.py",
+        " */",
+        "",
+        "export const counties = [",
+    ]
+    for name, consts in ordered:
+        cov = COVERED.get(name, set())
+        lines.append("  {")
+        lines.append(f"    name: {json.dumps(name)},")
+        lines.append(f"    code: {CODES[name]},")
+        lines.append("    constituencies: [")
+        for c in consts:
+            flag = "true " if c in cov else "false"
+            lines.append(f"      {{ name: {json.dumps(c)}, covered: {flag} }},")
+        lines.append("    ],")
+        lines.append("  },")
+    lines.append("];")
+    lines.append("")
+    lines.append("/** Flat list of every constituency, each tagged with its county. */")
+    lines.append("export const allConstituencies = counties.flatMap((c) =>")
+    lines.append("  c.constituencies.map((k) => ({ ...k, county: c.name }))")
+    lines.append(");")
+    lines.append("")
+    lines.append("export const findCounty = (name) =>")
+    lines.append("  counties.find((c) => c.name.toLowerCase() === String(name).toLowerCase());")
+    lines.append("")
+    lines.append("export const findConstituency = (name) =>")
+    lines.append("  allConstituencies.find(")
+    lines.append("    (k) => k.name.toLowerCase() === String(name).toLowerCase()")
+    lines.append("  );")
+    lines.append("")
+
+    out = ROOT.parents[1] / "server" / "data" / "geography.js"
+    out.write_text("\n".join(lines))
+    print(f"wrote {out}")
+    print(f"{n_counties} counties, {n_const} constituencies")
+    print(f"covered: {sum(len(v) for v in COVERED.values())} constituencies")
+
+
+
+if __name__ == "__main__":
+    main()
